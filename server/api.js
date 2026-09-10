@@ -128,12 +128,36 @@ export function fromApiReport(body) {
   };
 }
 
+/**
+ * The key as the API received it, described without revealing it: its length
+ * and the first 8 hex digits of its SHA-256 hash.
+ *
+ * "Check REPORT_API_KEY matches" was all an operator had to go on, and pasting
+ * blind into a masked field failed more than once. Compared with the same two
+ * values worked out for CEU_ADMIN_KEY, this says which mistake it was: a
+ * different length is a partial or padded paste, the same length with a
+ * different fingerprint is another key altogether, and a match means the
+ * right value is saved but has not been deployed yet.
+ */
+async function describeKey(key) {
+  const raw = String(key ?? '');
+  // fetch trims header values, so the trimmed form is what the API compared.
+  const sent = raw.trim();
+  const hash = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(sent)));
+  const fingerprint = [...hash.slice(0, 4)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  const notes = [];
+  if (sent !== raw) notes.push('it has spaces or line breaks around it');
+  if (/^(["']).*\1$/.test(sent)) notes.push('it is wrapped in quotes');
+  return `This site's REPORT_API_KEY is ${sent.length} characters, fingerprint ${fingerprint}` +
+    `${notes.length ? ` (${notes.join('; ')})` : ''}.`;
+}
+
 /** §9.2 status codes, turned into something an operator can act on. */
-function failure(status, body, origin) {
+function failure(status, body, origin, keyNote = '') {
   const message = clean(body?.message);
   if (status === 404 && message) {
     return 'The API refused the admin key (it answers "No such endpoint." to a missing or wrong key). ' +
-      'Check REPORT_API_KEY matches CEU_ADMIN_KEY on the ceustamps-api Web App.';
+      `Check REPORT_API_KEY matches CEU_ADMIN_KEY on the ceustamps-api Web App. ${keyNote}`.trim();
   }
   if (status === 404) {
     return `${origin} has no report endpoint yet — the deployed API predates it. ` +
@@ -169,7 +193,11 @@ export function createApiSource({ url, key, fetchImpl = globalThis.fetch, timeou
       }
 
       const body = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(failure(response.status, body, endpoint.origin));
+      if (!response.ok) {
+        // Only a refused key is described; every other failure is about the API, not the key.
+        const keyNote = response.status === 404 ? await describeKey(key) : '';
+        throw new Error(failure(response.status, body, endpoint.origin, keyNote));
+      }
       if (!isReport(body)) throw new Error('The API answered, but not with a report.');
       return fromApiReport(body);
     },

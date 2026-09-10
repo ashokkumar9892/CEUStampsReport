@@ -90,6 +90,19 @@ test('tells a wrong key apart from an API that lacks the endpoint', async () => 
   await assert.rejects(source(fakeFetch(404, { error: 'not_found' })).report(window), /no report endpoint yet/);
 });
 
+test('describes a refused key by length and fingerprint, never by value', async () => {
+  const refused = fakeFetch(404, { error: 'not_found', message: 'No such endpoint.' });
+  const error = await source(refused).report(window).catch((e) => e);
+  // 2bb80d53 is the start of the published SHA-256 of "secret" -- a fixed
+  // value, not the code's own arithmetic repeated back to it.
+  assert.match(error.message, /REPORT_API_KEY is 6 characters, fingerprint 2bb80d53\.$/);
+  assert.ok(!error.message.includes('secret'), 'the key itself never appears');
+
+  const pasted = createApiSource({ url: 'https://api.example', key: ' "secret" \n', fetchImpl: refused });
+  const padded = await pasted.report(window).catch((e) => e);
+  assert.match(padded.message, /8 characters, fingerprint [0-9a-f]{8} \(it has spaces or line breaks around it; it is wrapped in quotes\)/);
+});
+
 test('explains other refusals', async () => {
   await assert.rejects(source(fakeFetch(400, { error: 'bad_range', message: 'Not a date: x' })).report(window), /rejected the date range: Not a date: x/);
   await assert.rejects(source(fakeFetch(429, { error: 'rate_limited' })).report(window), /rate-limiting/);

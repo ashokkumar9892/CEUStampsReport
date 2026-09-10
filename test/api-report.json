@@ -1,0 +1,446 @@
+{
+  "range": {
+    "from": "2026-09-01T00:00:00.000Z",
+    "to": "2026-09-11T00:00:00.000Z",
+    "includeDemo": false
+  },
+  "geoipConfigured": false,
+  "totals": {
+    "students": 6,
+    "signIns": 4,
+    "signedInOnly": 1,
+    "sessions": 6,
+    "completed": 4,
+    "certificates": 1,
+    "seatMinutes": 188,
+    "locationsResolved": 3
+  },
+  "courses": [
+    {
+      "id": "legacy-course",
+      "title": "legacy-course",
+      "state": "FL",
+      "section": null,
+      "sessions": 1,
+      "completed": 1,
+      "passed": 0,
+      "students": 1,
+      "locations": [],
+      "addresses": [
+        "203.0.113.50"
+      ],
+      "scores": [],
+      "seatMinutes": 60,
+      "averageScore": null
+    },
+    {
+      "id": "nc-elec-4h-s1",
+      "title": "NC Electrical 4h — Section 1",
+      "state": "NC",
+      "section": 1,
+      "sessions": 1,
+      "completed": 1,
+      "passed": 1,
+      "students": 1,
+      "locations": [
+        "Concord, North Carolina, United States"
+      ],
+      "addresses": [
+        "98.122.179.148:61347"
+      ],
+      "scores": [
+        90
+      ],
+      "seatMinutes": 30,
+      "averageScore": 90
+    },
+    {
+      "id": "nc-elec-4h-s2",
+      "title": "NC Electrical 4h — Section 2",
+      "state": "NC",
+      "section": 2,
+      "sessions": 1,
+      "completed": 0,
+      "passed": 0,
+      "students": 1,
+      "locations": [
+        "Concord, North Carolina, United States"
+      ],
+      "addresses": [
+        "98.122.179.148"
+      ],
+      "scores": [],
+      "seatMinutes": 13,
+      "averageScore": null
+    },
+    {
+      "id": "nc-elec-4h-s3",
+      "title": "NC Electrical 4h — Section 3",
+      "state": "GA",
+      "section": 3,
+      "sessions": 1,
+      "completed": 1,
+      "passed": 0,
+      "students": 1,
+      "locations": [],
+      "addresses": [
+        "10.0.0.5"
+      ],
+      "scores": [
+        60
+      ],
+      "seatMinutes": 25,
+      "averageScore": 60
+    },
+    {
+      "id": "sc-plumb",
+      "title": "SC Plumbing Code Update",
+      "state": "SC",
+      "section": null,
+      "sessions": 1,
+      "completed": 1,
+      "passed": 0,
+      "students": 1,
+      "locations": [],
+      "addresses": [
+        "::1"
+      ],
+      "scores": [],
+      "seatMinutes": 60,
+      "averageScore": null
+    },
+    {
+      "id": "va-safety",
+      "title": "VA Safety Refresher",
+      "state": "VA",
+      "section": null,
+      "sessions": 1,
+      "completed": 0,
+      "passed": 0,
+      "students": 1,
+      "locations": [],
+      "addresses": [],
+      "scores": [],
+      "seatMinutes": 0,
+      "averageScore": null
+    }
+  ],
+  "students": [
+    {
+      "licence": "TX-9",
+      "name": "Chris Doe",
+      "email": "chris@example.com",
+      "phone": null,
+      "state": null,
+      "signIns": 2,
+      "sessions": 0,
+      "completed": 0,
+      "courses": [],
+      "firstSeen": "2026-09-02T10:00:00.000Z",
+      "lastSeen": "2026-09-09T10:00:00.000Z",
+      "locations": [],
+      "addresses": [
+        "198.51.100.9"
+      ],
+      "scores": [],
+      "seatMinutes": 0,
+      "averageScore": null
+    },
+    {
+      "licence": "VA-2",
+      "name": "Vic Ng",
+      "email": null,
+      "phone": null,
+      "state": "VA",
+      "signIns": 0,
+      "sessions": 1,
+      "completed": 0,
+      "courses": [
+        "VA Safety Refresher"
+      ],
+      "firstSeen": "2026-09-07T08:00:00.000Z",
+      "lastSeen": "2026-09-07T08:00:00.000Z",
+      "locations": [],
+      "addresses": [],
+      "scores": [],
+      "seatMinutes": 0,
+      "averageScore": null
+    },
+    {
+      "licence": "FL-1",
+      "name": "Ava Kim",
+      "email": null,
+      "phone": null,
+      "state": "FL",
+      "signIns": 0,
+      "sessions": 1,
+      "completed": 1,
+      "courses": [
+        "legacy-course"
+      ],
+      "firstSeen": "2026-09-06T08:00:00.000Z",
+      "lastSeen": "2026-09-06T08:00:00.000Z",
+      "locations": [],
+      "addresses": [
+        "203.0.113.50"
+      ],
+      "scores": [],
+      "seatMinutes": 60,
+      "averageScore": null
+    },
+    {
+      "licence": "GA-55",
+      "name": "Sam Okafor",
+      "email": null,
+      "phone": null,
+      "state": "GA",
+      "signIns": 0,
+      "sessions": 1,
+      "completed": 1,
+      "courses": [
+        "NC Electrical 4h — Section 3"
+      ],
+      "firstSeen": "2026-09-05T11:00:00.000Z",
+      "lastSeen": "2026-09-05T11:00:00.000Z",
+      "locations": [],
+      "addresses": [
+        "10.0.0.5"
+      ],
+      "scores": [
+        60
+      ],
+      "seatMinutes": 25,
+      "averageScore": 60
+    },
+    {
+      "licence": "SC-777",
+      "name": "Jordan Lee",
+      "email": null,
+      "phone": null,
+      "state": "SC",
+      "signIns": 1,
+      "sessions": 1,
+      "completed": 1,
+      "courses": [
+        "SC Plumbing Code Update"
+      ],
+      "firstSeen": "2026-09-04T08:55:00.000Z",
+      "lastSeen": "2026-09-04T09:00:00.000Z",
+      "locations": [],
+      "addresses": [
+        "::1"
+      ],
+      "scores": [],
+      "seatMinutes": 60,
+      "averageScore": null
+    },
+    {
+      "licence": "NC-12345",
+      "name": "Pat Rivera",
+      "email": "pat@new.example",
+      "phone": "+1 704 555 0100",
+      "state": "NC",
+      "signIns": 1,
+      "sessions": 2,
+      "completed": 1,
+      "courses": [
+        "NC Electrical 4h — Section 1",
+        "NC Electrical 4h — Section 2"
+      ],
+      "firstSeen": "2026-09-01T12:00:00.000Z",
+      "lastSeen": "2026-09-03T15:00:00.000Z",
+      "locations": [
+        "Concord, North Carolina, United States"
+      ],
+      "addresses": [
+        "98.122.179.148",
+        "98.122.179.148:61347"
+      ],
+      "scores": [
+        90
+      ],
+      "seatMinutes": 43,
+      "averageScore": 90
+    }
+  ],
+  "sessions": [
+    {
+      "id": "S1",
+      "name": "Pat Rivera",
+      "licence": "NC-12345",
+      "email": "pat@old.example",
+      "phone": "+1 704 555 0100",
+      "state": "NC",
+      "courseId": "nc-elec-4h-s1",
+      "course": "NC Electrical 4h — Section 1",
+      "programId": "nc-elec-4h",
+      "section": 1,
+      "startedAt": "2026-09-02T14:00:00.000Z",
+      "completedAt": "2026-09-02T14:40:00.000Z",
+      "seatMinutes": 30,
+      "scorePercent": 90,
+      "passed": true,
+      "certificate": null,
+      "ip": "98.122.179.148:61347",
+      "location": "Concord, North Carolina, United States",
+      "device": "Mozilla/5.0",
+      "isDemo": false
+    },
+    {
+      "id": "S2",
+      "name": "Pat Rivera",
+      "licence": "NC-12345",
+      "email": "pat@new.example",
+      "phone": null,
+      "state": "NC",
+      "courseId": "nc-elec-4h-s2",
+      "course": "NC Electrical 4h — Section 2",
+      "programId": "nc-elec-4h",
+      "section": 2,
+      "startedAt": "2026-09-03T15:00:00.000Z",
+      "completedAt": null,
+      "seatMinutes": 13,
+      "scorePercent": null,
+      "passed": null,
+      "certificate": null,
+      "ip": "98.122.179.148",
+      "location": "Concord, North Carolina, United States",
+      "device": "Mozilla/5.0",
+      "isDemo": false
+    },
+    {
+      "id": "S3",
+      "name": "Jordan Lee",
+      "licence": "SC-777",
+      "email": null,
+      "phone": null,
+      "state": "SC",
+      "courseId": "sc-plumb",
+      "course": "SC Plumbing Code Update",
+      "programId": null,
+      "section": null,
+      "startedAt": "2026-09-04T09:00:00.000Z",
+      "completedAt": "2026-09-04T10:00:00.000Z",
+      "seatMinutes": 60,
+      "scorePercent": null,
+      "passed": null,
+      "certificate": "CEU-2026-0001",
+      "ip": "::1",
+      "location": null,
+      "device": "Mozilla/5.0",
+      "isDemo": false
+    },
+    {
+      "id": "S4",
+      "name": "Sam Okafor",
+      "licence": "GA-55",
+      "email": null,
+      "phone": null,
+      "state": "GA",
+      "courseId": "nc-elec-4h-s3",
+      "course": "NC Electrical 4h — Section 3",
+      "programId": "nc-elec-4h",
+      "section": 3,
+      "startedAt": "2026-09-05T11:00:00.000Z",
+      "completedAt": "2026-09-05T11:30:00.000Z",
+      "seatMinutes": 25,
+      "scorePercent": 60,
+      "passed": false,
+      "certificate": null,
+      "ip": "10.0.0.5",
+      "location": null,
+      "device": "Mozilla/5.0",
+      "isDemo": false
+    },
+    {
+      "id": "S5",
+      "name": "Ava Kim",
+      "licence": "FL-1",
+      "email": null,
+      "phone": null,
+      "state": "FL",
+      "courseId": "legacy-course",
+      "course": "legacy-course",
+      "programId": null,
+      "section": null,
+      "startedAt": "2026-09-06T08:00:00.000Z",
+      "completedAt": "2026-09-06T09:00:00.000Z",
+      "seatMinutes": 60,
+      "scorePercent": null,
+      "passed": null,
+      "certificate": null,
+      "ip": "203.0.113.50",
+      "location": null,
+      "device": "Mozilla/5.0",
+      "isDemo": false
+    },
+    {
+      "id": "S6",
+      "name": "Vic Ng",
+      "licence": "VA-2",
+      "email": null,
+      "phone": null,
+      "state": "VA",
+      "courseId": "va-safety",
+      "course": "VA Safety Refresher",
+      "programId": null,
+      "section": null,
+      "startedAt": "2026-09-07T08:00:00.000Z",
+      "completedAt": null,
+      "seatMinutes": 0,
+      "scorePercent": null,
+      "passed": null,
+      "certificate": null,
+      "ip": null,
+      "location": null,
+      "device": "Mozilla/5.0",
+      "isDemo": false
+    }
+  ],
+  "signIns": [
+    {
+      "licence": "NC-12345",
+      "name": "Patricia R",
+      "email": null,
+      "phone": null,
+      "state": null,
+      "at": "2026-09-01T12:00:00.000Z",
+      "ip": "98.122.179.148",
+      "location": "Concord, North Carolina, United States",
+      "device": "Mozilla/5.0"
+    },
+    {
+      "licence": "TX-9",
+      "name": "(no name given)",
+      "email": "chris@example.com",
+      "phone": null,
+      "state": null,
+      "at": "2026-09-02T10:00:00.000Z",
+      "ip": "198.51.100.9",
+      "location": null,
+      "device": "Mozilla/5.0"
+    },
+    {
+      "licence": "TX-9",
+      "name": "Chris Doe",
+      "email": "other@example.com",
+      "phone": null,
+      "state": "TX",
+      "at": "2026-09-09T10:00:00.000Z",
+      "ip": "198.51.100.9",
+      "location": null,
+      "device": "Mozilla/5.0"
+    },
+    {
+      "licence": "SC-777",
+      "name": "Jordan Lee",
+      "email": null,
+      "phone": null,
+      "state": null,
+      "at": "2026-09-04T08:55:00.000Z",
+      "ip": "::1",
+      "location": null,
+      "device": "Mozilla/5.0"
+    }
+  ]
+}

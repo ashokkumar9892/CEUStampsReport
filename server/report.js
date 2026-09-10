@@ -40,13 +40,15 @@ export function seatMinutes(row) {
   return Math.round((row.seat_seconds ?? row.credited_seconds ?? 0) / 60);
 }
 
-/** §5.5 */
-export function resultOf(row) {
-  if (row.completed_at == null) return 'in progress';
-  if (row.passed == null) return 'finished';
-  if (!row.passed) return 'fail';
-  return row.score_percent == null ? 'pass' : `${row.score_percent}% pass`;
+/** §5.5 — no completion row (passed is null) means a single-sitting course. */
+export function describeResult(completedAt, passed, score) {
+  if (completedAt == null) return 'in progress';
+  if (passed == null) return 'finished';
+  if (!passed) return 'fail';
+  return score == null ? 'pass' : `${score}% pass`;
 }
+
+export const resultOf = (row) => describeResult(row.completed_at, row.passed, row.score_percent);
 
 function toSitting(r) {
   return {
@@ -179,9 +181,11 @@ export function buildReport(sessionRows, signInRows, { from, to, includeDemo = f
   const finished = sittings.filter((s) => s.completedAt);
 
   return {
+    source: 'database',
     range: { from: iso(from), to: iso(to) },
     includeDemo,
     demoHidden: all.length - sittings.length,
+    geoipConfigured: null, // not knowable from the database
     generatedAt: new Date().toISOString(),
     totals: {
       people: students.length,

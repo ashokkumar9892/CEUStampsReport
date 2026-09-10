@@ -3,6 +3,7 @@
 // courses.body must never be read.
 
 import sql from 'mssql';
+import { buildReport } from './report.js';
 
 const SITTINGS_SQL = `
 SELECT
@@ -70,3 +71,33 @@ export function createSqlStore({ server, port, database, user, password }) {
     },
   };
 }
+
+export function describeDbError(err) {
+  const message = String(err?.message ?? err);
+  if (/not allowed to access the server/i.test(message)) {
+    return `${message} Add this machine's public IP to the SQL server firewall (README, "Firewall").`;
+  }
+  if (/permission was denied/i.test(message)) {
+    return `${message} The report login is missing a grant — run sql/02-ceustampsdb-grant-report-user.sql.`;
+  }
+  if (err?.code === 'ELOGIN') return `${message} Check REPORT_SQL_USER and REPORT_SQL_PASSWORD.`;
+  return message;
+}
+
+/** A report source over anything with the two query methods. */
+export function sourceFromStore(store) {
+  return {
+    async report({ from, to, includeDemo = false }) {
+      let rows;
+      try {
+        rows = await Promise.all([store.reportSessions(from, to), store.reportSignIns(from, to)]);
+      } catch (err) {
+        throw new Error(`Could not read the database. ${describeDbError(err)}`, { cause: err });
+      }
+      return buildReport(rows[0], rows[1], { from, to, includeDemo });
+    },
+    close: async () => store.close?.(),
+  };
+}
+
+export const createSqlSource = (config) => sourceFromStore(createSqlStore(config));

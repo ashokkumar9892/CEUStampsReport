@@ -5,14 +5,26 @@ the site in a date range, which courses they took and how far they got, how to
 reach them, and when and where they came from.
 
 The full specification is [docs/report-requirements.md](docs/report-requirements.md);
-code comments cite its section numbers (§5.2 and so on).
+code comments cite its section numbers (§5.2 and so on). The API it reads by default
+is described in §9 of the same document in the CEU-Website repo.
+
+## Where the data comes from
+
+| `REPORT_SOURCE` | Reads | Needs |
+|---|---|---|
+| `api` (default) | `GET https://ceustamps-api.azurewebsites.net/api/admin/report`, which applies the §5 rules itself | The API's admin key (`CEU_ADMIN_KEY`) |
+| `sql` | `ceustampsdb` directly, with the two queries in §4 | A read-only SQL login and a firewall rule |
+
+Both give the same page. `test/api.test.js` checks that they agree, using a response
+produced by the API's own `report()` code.
 
 ## What it contains
 
 | Path | Role |
 |---|---|
-| `server/db.js` | The two queries (§4), parameterised, over an encrypted connection |
-| `server/report.js` | Rows → people, courses, sittings, sign-ins and tiles (§5, §6.2) |
+| `server/api.js` | Calls the API server-side with `x-admin-key` and reshapes its answer |
+| `server/db.js` | The two SQL queries (§4), parameterised, over an encrypted connection |
+| `server/report.js` | SQL rows → people, courses, sittings, sign-ins and tiles (§5, §6.2) |
 | `server/app.js` | Serves the page and `GET /api/report`; loopback / password guard (§7) |
 | `server/config.js` | Settings from the environment; refuses unsafe ones |
 | `shared/format.js` | IP, location, seat time, CSV and date-window rules — used by server and page |
@@ -20,25 +32,49 @@ code comments cite its section numbers (§5.2 and so on).
 | `public/` | The page: filters, tiles, four sortable, paged tabs, CSV export |
 | `sql/` | Scripts that create the read-only login, and the §8 cross-check |
 
-Only one runtime dependency: [`mssql`](https://www.npmjs.com/package/mssql). The page
-has no build step and loads nothing from other sites.
+Only one runtime dependency: [`mssql`](https://www.npmjs.com/package/mssql), for SQL
+mode. The page has no build step and loads nothing from other sites.
 
 ## Setup
 
 Needs Node.js 22.9 or newer.
 
-### 1. Create the read-only login (once)
+```powershell
+npm install
+Copy-Item .env.example .env   # then fill it in, see below
+npm start
+```
 
-Sign in as `tradealgoadmin` (Azure Data Studio, SSMS, or the portal query editor) and run:
+Open <http://127.0.0.1:5180>. The report loads the last 30 days once when the page
+opens. After that it only runs when you press **Run report** or a shortcut. The status
+line says which source the data came from.
+
+### API mode (default)
+
+Set `REPORT_API_KEY` in `.env` to the `CEU_ADMIN_KEY` configured on the
+`ceustamps-api` Web App.
+
+- **The key never reaches the browser.** This server calls the API and passes the
+  result on. Browsers can't call the API with the key directly anyway: its CORS rules
+  don't allow `x-admin-key`.
+- `REPORT_API_URL` must be `https://` (plain `http://` is accepted only for
+  `localhost`), and redirects are never followed, so the key can't be sent anywhere
+  else.
+- **The endpoint has to be deployed first.** On 10 Sep 2026 production still ran
+  commit `1b02764`, which has no `/api/admin/report`. Deploy the current API
+  (`deploy/deploy-ceustamps.ps1` in CEU-Website) and set `CEU_ADMIN_KEY` on the
+  Web App. Until then the page says the endpoint is missing; with a wrong key it
+  says the key was refused.
+
+### SQL mode
+
+Set `REPORT_SOURCE=sql` and `REPORT_SQL_PASSWORD`. Then, once, as `tradealgoadmin`:
 
 1. [`sql/01-master-create-login.sql`](sql/01-master-create-login.sql) against **master**, with a new strong password.
 2. [`sql/02-ceustampsdb-grant-report-user.sql`](sql/02-ceustampsdb-grant-report-user.sql) against **ceustampsdb**.
 
 This gives `ceustamps_report` `SELECT` only, and never on `sessions.token_hash` or
-`courses.body`. Do not use `ceustamps_app` for this: it can write and change the
-schema. The app refuses to start if you configure it or the admin login.
-
-### 2. Firewall
+`courses.body`. The app refuses to start as `ceustamps_app` or the admin.
 
 The SQL server lets in Azure services and `98.122.179.148`. From anywhere else, add
 the machine's public IP:
@@ -47,20 +83,6 @@ the machine's public IP:
 az sql server firewall-rule create -g TradeAlgoResource -s tradealgo-sql8892 `
   -n ReportApp --start-ip-address <app IP> --end-ip-address <app IP>
 ```
-
-If you skip this, the page shows the server's "not allowed to access the server"
-error, which includes the IP address it saw.
-
-### 3. Configure and run
-
-```powershell
-npm install
-Copy-Item .env.example .env   # then set REPORT_SQL_PASSWORD
-npm start
-```
-
-Open <http://127.0.0.1:5180>. The report loads the last 30 days once when the page
-opens. After that it only runs when you press **Run report** or a shortcut.
 
 ## Who can open it
 
@@ -80,8 +102,8 @@ student, so treat both the page and its CSV exports as personal data.
 ## Checking the numbers
 
 [`sql/check-counts.sql`](sql/check-counts.sql) computes People / Sittings / Sign-ins
-directly. The status line under the filters prints the exact UTC window the page
-used, so paste that into `@from` / `@to` and compare with the tiles.
+straight from the database. The status line under the filters prints the exact UTC
+window the page used, so paste that into `@from` / `@to` and compare with the tiles.
 
 ## Tests
 
@@ -89,15 +111,19 @@ used, so paste that into `@from` / `@to` and compare with the tiles.
 npm test
 ```
 
-Covers the aggregation rules, IP / location / CSV rules, the local-time date
-window, sorting and paging, and the HTTP guards. The tests use fixture rows and
-never touch the database.
+Covers the aggregation rules, the API adapter and its error messages,
+API ↔ database parity, IP / location / CSV rules, the local-time date window,
+sorting and paging, and the HTTP guards. Nothing touches the network or the
+database.
 
 ## Notes on the data
 
-- Rows written before 9 Sep 2026 store IPs with a source port (`1.2.3.4:61347`).
-  The port is stripped for display and grouping. The Sittings / Sign-ins CSVs keep
-  the stored value.
+- Rows written before 9 Sep 2026 store IPs with a source port (`1.2.3.4:61347`), and
+  the API returns addresses raw. The port is stripped for display and grouping. The
+  Sittings / Sign-ins CSVs keep the stored value.
+- In API mode, the Locations tile says so when the API has address lookup switched
+  off (`CEU_GEOIP_URL` unset). The Sittings tile can't say how many demo sittings
+  were hidden, because the API doesn't report that.
 - Sessions older than migration 003 have no location and never will.
 - The existing deployment-check sessions (`Deploy Check`, `Gate Test`, …) are not
   filtered out; they count like any other sitting, as in the original report.

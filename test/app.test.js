@@ -3,6 +3,7 @@ import http from 'node:http';
 import { after, before, describe, test } from 'node:test';
 import { createApp } from '../server/app.js';
 import { loadConfig } from '../server/config.js';
+import { sourceFromStore } from '../server/db.js';
 import { sessionRows, signInRows } from './fixtures.js';
 
 const quiet = { error() {} };
@@ -45,7 +46,7 @@ describe('local mode', () => {
   let server;
   const calls = [];
   before(async () => {
-    server = await listen(createApp({ config: { local: true, auth: null }, store: fakeStore(calls), log: quiet }));
+    server = await listen(createApp({ config: { local: true, auth: null }, source: sourceFromStore(fakeStore(calls)), log: quiet }));
   });
   after(() => server.close());
 
@@ -101,7 +102,7 @@ describe('database errors', () => {
       },
       reportSignIns: async () => [],
     };
-    const server = await listen(createApp({ config: { local: true, auth: null }, store, log: quiet }));
+    const server = await listen(createApp({ config: { local: true, auth: null }, source: sourceFromStore(store), log: quiet }));
     try {
       const res = await request(server, RANGE);
       assert.equal(res.status, 502);
@@ -116,7 +117,7 @@ describe('password', () => {
   let server;
   before(async () => {
     const config = { local: false, auth: { user: 'ops', password: 's3cret' } };
-    server = await listen(createApp({ config, store: fakeStore(), log: quiet }));
+    server = await listen(createApp({ config, source: sourceFromStore(fakeStore()), log: quiet }));
   });
   after(() => server.close());
 
@@ -135,28 +136,48 @@ describe('password', () => {
 });
 
 describe('config', () => {
-  const base = { REPORT_SQL_PASSWORD: 'x' };
+  const api = { REPORT_API_KEY: 'k' };
+  const sql = { REPORT_SOURCE: 'sql', REPORT_SQL_PASSWORD: 'x' };
 
-  test('defaults to loopback and the report login', () => {
-    const config = loadConfig(base);
+  test('defaults to the live API over https, on loopback', () => {
+    const config = loadConfig(api);
     assert.deepEqual(config.problems, []);
+    assert.equal(config.source, 'api');
+    assert.equal(config.api.url, 'https://ceustamps-api.azurewebsites.net');
     assert.equal(config.local, true);
+  });
+
+  test('needs the admin key in API mode, and nothing from SQL', () => {
+    assert.deepEqual(loadConfig({}).problems.length, 1);
+    assert.match(loadConfig({}).problems[0], /REPORT_API_KEY/);
+  });
+
+  test('never sends the key over plain http, except to this machine', () => {
+    assert.match(loadConfig({ ...api, REPORT_API_URL: 'http://ceustamps-api.azurewebsites.net' }).problems[0], /https/);
+    assert.deepEqual(loadConfig({ ...api, REPORT_API_URL: 'http://localhost:8787' }).problems, []);
+    assert.match(loadConfig({ ...api, REPORT_API_URL: 'not a url' }).problems[0], /not a URL/);
+  });
+
+  test('SQL mode defaults to the report login and needs its password', () => {
+    const config = loadConfig(sql);
+    assert.deepEqual(config.problems, []);
     assert.equal(config.sql.user, 'ceustamps_report');
     assert.equal(config.sql.database, 'ceustampsdb');
+    assert.match(loadConfig({ REPORT_SOURCE: 'sql' }).problems[0], /REPORT_SQL_PASSWORD/);
   });
 
   test('refuses the live API login and the admin', () => {
-    assert.equal(loadConfig({ ...base, REPORT_SQL_USER: 'ceustamps_app' }).problems.length, 1);
-    assert.equal(loadConfig({ ...base, REPORT_SQL_USER: 'TradeAlgoAdmin' }).problems.length, 1);
+    assert.equal(loadConfig({ ...sql, REPORT_SQL_USER: 'ceustamps_app' }).problems.length, 1);
+    assert.equal(loadConfig({ ...sql, REPORT_SQL_USER: 'TradeAlgoAdmin' }).problems.length, 1);
+  });
+
+  test('refuses an unknown source', () => {
+    assert.match(loadConfig({ ...api, REPORT_SOURCE: 'csv' }).problems[0], /REPORT_SOURCE/);
   });
 
   test('refuses to listen on the network without a password', () => {
-    assert.match(loadConfig({ ...base, REPORT_HOST: '0.0.0.0' }).problems[0], /REPORT_AUTH_USER/);
-    const guarded = loadConfig({ ...base, REPORT_HOST: '0.0.0.0', REPORT_AUTH_USER: 'a', REPORT_AUTH_PASSWORD: 'b' });
+    assert.match(loadConfig({ ...api, REPORT_HOST: '0.0.0.0' }).problems[0], /REPORT_AUTH_USER/);
+    const guarded = loadConfig({ ...api, REPORT_HOST: '0.0.0.0', REPORT_AUTH_USER: 'a', REPORT_AUTH_PASSWORD: 'b' });
     assert.deepEqual(guarded.problems, []);
-  });
-
-  test('needs a database password', () => {
-    assert.match(loadConfig({}).problems[0], /REPORT_SQL_PASSWORD/);
   });
 });

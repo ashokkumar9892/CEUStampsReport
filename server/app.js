@@ -4,7 +4,6 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildReport } from './report.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const JS = 'text/javascript; charset=utf-8';
@@ -55,19 +54,11 @@ function parseInstant(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-export function describeDbError(err) {
-  const message = String(err?.message ?? err);
-  if (/not allowed to access the server/i.test(message)) {
-    return `${message} Add this machine's public IP to the SQL server firewall (README, "Firewall").`;
-  }
-  if (/permission was denied/i.test(message)) {
-    return `${message} The report login is missing a grant — run sql/02-ceustampsdb-grant-report-user.sql.`;
-  }
-  if (err?.code === 'ELOGIN') return `${message} Check REPORT_SQL_USER and REPORT_SQL_PASSWORD.`;
-  return message;
-}
-
-export function createApp({ config, store, log = console }) {
+/**
+ * @param source anything with report({ from, to, includeDemo }) — the live API
+ *               (server/api.js) or the database (server/db.js).
+ */
+export function createApp({ config, source, log = console }) {
   const expected = config.auth ? digest(`${config.auth.user}:${config.auth.password}`) : null;
 
   function refusal(req) {
@@ -93,14 +84,14 @@ export function createApp({ config, store, log = console }) {
     if (to <= from) return sendJson(res, 400, { error: 'The end of the range must be after its start.' });
     const includeDemo = url.searchParams.get('includeDemo') === '1';
 
-    let rows;
+    let body;
     try {
-      rows = await Promise.all([store.reportSessions(from, to), store.reportSignIns(from, to)]);
+      body = await source.report({ from, to, includeDemo });
     } catch (err) {
-      log.error('Report query failed:', err);
-      return sendJson(res, 502, { error: `Could not read the database. ${describeDbError(err)}` });
+      log.error('Report failed:', err);
+      return sendJson(res, 502, { error: err.message || 'The report could not be loaded.' });
     }
-    return sendJson(res, 200, buildReport(rows[0], rows[1], { from, to, includeDemo }));
+    return sendJson(res, 200, body);
   }
 
   return async function handle(req, res) {

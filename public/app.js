@@ -193,7 +193,7 @@ function sortedRows() {
 // ---- Rendering ----
 
 function renderTiles() {
-  const { totals, includeDemo, demoHidden } = state.report;
+  const { totals, includeDemo, demoHidden, geoipConfigured } = state.report;
   const demoNote = includeDemo ? 'demo sittings included' : demoHidden ? `${demoHidden} demo hidden` : 'demo excluded';
   const tiles = [
     ['People', totals.people, `${totals.signedInOnly} signed in only`],
@@ -201,7 +201,8 @@ function renderTiles() {
     ['Sittings', totals.sittings, demoNote],
     ['Finished', totals.finished, `${totals.certificates} with a certificate`],
     ['Seat time', formatSeat(totals.seatMinutes), 'credited'],
-    ['Locations', totals.locations, 'sittings + sign-ins placed'],
+    // The API says whether it resolves addresses at all; zero means something different when it doesn't.
+    ['Locations', totals.locations, geoipConfigured === false ? 'address lookup is off' : 'sittings + sign-ins placed'],
   ];
   $('tiles').replaceChildren(
     ...tiles.map(([label, value, sub]) =>
@@ -340,7 +341,8 @@ async function runReport() {
     state.range = { fromDay, toDay };
     state.page = 1;
     const label = `${dayOnly.format(new Date(window.from))} – ${dayOnly.format(addDays(new Date(window.to), -1))}`;
-    setStatus(`${label}, days on ${timeZone} time (UTC ${window.from} → ${window.to}). Loaded ${when(body.generatedAt)}.`);
+    const origin = body.source === 'api' ? 'the CEU Stamps API' : 'the database';
+    setStatus(`${label}, days on ${timeZone} time (UTC ${window.from} → ${window.to}). Loaded from ${origin} ${when(body.generatedAt)}.`);
     render();
   } catch (err) {
     if (request === latestRequest) setStatus(err.message || 'The report could not be loaded.', true);

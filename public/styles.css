@@ -1,0 +1,137 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f5f6f8;
+  --panel: #ffffff;
+  --ink: #1b2230;
+  --muted: #5b6474;
+  --line: #dde1e7;
+  --head: #f0f2f5;
+  --accent: #1f5f99;
+  --accent-ink: #ffffff;
+  --chip: #eaeef3;
+  --ok: #1a7445;
+  --ok-bg: #e3f3ea;
+  --bad: #a8261d;
+  --bad-bg: #fbe7e5;
+  --pending: #7c5200;
+  --pending-bg: #fbf0da;
+  --error: #a8261d;
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11151b;
+    --panel: #181d25;
+    --ink: #e5e9f0;
+    --muted: #97a1b0;
+    --line: #2b323d;
+    --head: #1f252e;
+    --accent: #6ea8e0;
+    --accent-ink: #0c1420;
+    --chip: #262d38;
+    --ok: #6cc796;
+    --ok-bg: #173325;
+    --bad: #f09088;
+    --bad-bg: #3a1c1a;
+    --pending: #e5b75e;
+    --pending-bg: #352a14;
+    --error: #f09088;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body { margin: 0; background: var(--bg); color: var(--ink); }
+
+.page { max-width: 1440px; margin: 0 auto; padding: 24px 20px 40px; min-width: 0; }
+
+.masthead h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.01em; }
+.masthead p { margin: 2px 0 16px; color: var(--muted); }
+
+button, input, select { font: inherit; color: inherit; }
+button {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+input, select { border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; background: var(--panel); }
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.field { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 0.85rem; }
+.field.inline { flex-direction: row; align-items: center; gap: 8px; }
+.field input, .field select { color: var(--ink); font-size: 14px; }
+.shortcuts { display: flex; flex-wrap: wrap; gap: 6px; }
+.check { display: flex; align-items: center; gap: 6px; padding-bottom: 6px; }
+
+.status { min-height: 1.45em; margin: 10px 2px; color: var(--muted); }
+.status.error { color: var(--error); font-weight: 600; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+.tile .label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.tile .value { font-size: 1.8rem; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 2px; }
+.tile .sub { color: var(--muted); font-size: 0.85rem; }
+
+.tabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--line); }
+.tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
+  background: none;
+  padding: 9px 14px;
+  color: var(--muted);
+}
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; background: var(--panel); }
+.tabs .count { margin-left: 6px; padding: 0 7px; border-radius: 999px; background: var(--chip); font-size: 0.8em; font-weight: 500; }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 10px 10px; padding: 12px 16px 14px; min-width: 0; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.toolbar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.showing { color: var(--muted); }
+
+/* Wide tables scroll inside their own box; the page never scrolls sideways. */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 10px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--head); }
+th { background: var(--head); font-weight: 600; }
+th.num, td.num { text-align: right; }
+th button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+th button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+th .arrow { font-size: 0.7em; color: var(--accent); min-width: 0.8em; }
+td.mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.92em; }
+td.empty { text-align: center; color: var(--muted); padding: 24px; }
+
+/* Long course names: one line, full text on hover. */
+.truncate { display: inline-block; max-width: 30ch; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+
+.muted { color: var(--muted); }
+.more { margin-left: 6px; padding: 0 7px; border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 0.8em; }
+.tag { margin-left: 6px; padding: 0 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); font-size: 0.75em; text-transform: uppercase; }
+.pill { padding: 1px 8px; border-radius: 999px; font-size: 0.9em; }
+.pill.ok { color: var(--ok); background: var(--ok-bg); }
+.pill.bad { color: var(--bad); background: var(--bad-bg); }
+.pill.pending { color: var(--pending); background: var(--pending-bg); }
+
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 12px; }
+.pager span { margin: 0 6px; color: var(--muted); }
+
+.footnote { margin-top: 20px; color: var(--muted); font-size: 0.85rem; }

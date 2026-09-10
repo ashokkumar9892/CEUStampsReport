@@ -1,0 +1,17 @@
+{
+  "name": "ceustamps-report",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone, read-only CEU Stamps usage report (see docs/report-requirements.md).",
+  "type": "module",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "mssql": "^12.7.1"
+  }
+}

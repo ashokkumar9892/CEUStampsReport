@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>CEU Stamps · Usage report</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%231f5f99'/%3E%3Cpath d='M4 11V7M8 11V4M12 11V8' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <div class="page">
+    <header class="masthead">
+      <h1>Usage report</h1>
+      <p>CEU Stamps · read-only · contains student contact details — do not share</p>
+    </header>
+
+    <form id="filters" class="filters" novalidate>
+      <label class="field">From <input type="date" id="from" required></label>
+      <label class="field">To <input type="date" id="to" required></label>
+      <div class="shortcuts" role="group" aria-label="Quick ranges">
+        <button type="button" data-days="7">Last 7 days</button>
+        <button type="button" data-days="30">Last 30 days</button>
+        <button type="button" data-days="90">Last 90 days</button>
+      </div>
+      <label class="check"><input type="checkbox" id="demo"> Include demo sittings</label>
+      <button type="submit" id="run" class="primary">Run report</button>
+    </form>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+
+    <div id="results" hidden>
+      <section id="tiles" class="tiles" aria-label="Summary"></section>
+
+      <div id="tabs" class="tabs" role="tablist" aria-label="Report views"></div>
+      <section id="panel" class="panel" role="tabpanel">
+        <div class="toolbar">
+          <span id="showing" class="showing"></span>
+          <div class="toolbar-actions">
+            <label class="field inline">Rows per page
+              <select id="pagesize">
+                <option>10</option><option>25</option><option>50</option><option>100</option>
+              </select>
+            </label>
+            <button type="button" id="csv">Download CSV</button>
+          </div>
+        </div>
+        <div class="tablewrap">
+          <table id="grid">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <nav id="pager" class="pager" aria-label="Pages">
+          <button type="button" data-page="first">First</button>
+          <button type="button" data-page="prev">Previous</button>
+          <span id="pagelabel"></span>
+          <button type="button" data-page="next">Next</button>
+          <button type="button" data-page="last">Last</button>
+        </nav>
+      </section>
+    </div>
+
+    <p class="footnote">A sign-in is self-declared and unverified — the record a board relies on is the sittings,
+      which start from a redeemed voucher.</p>
+  </div>
+</body>
+</html>

@@ -335,6 +335,7 @@ async function runReport() {
     const response = await fetch(`/api/report?${params}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
     const body = await response.json().catch(() => ({}));
     if (request !== latestRequest) return; // a newer run has started
+    if (response.status === 401) throw new Error('Sign in to view the report — reload the page to be asked again.');
     if (!response.ok) throw new Error(body.error || `The server answered ${response.status}.`);
 
     state.report = body;

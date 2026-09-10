@@ -1,0 +1,30 @@
+# Netlify: publish only the page (dist/, built from public/ and shared/), and run
+# GET /api/report as a function. Without this, Netlify serves the repository root
+# as static files — no index.html there, so "/" is a 404, and every file in the
+# repo is downloadable.
+#
+# Set in Site configuration → Environment variables (never in this file):
+#   REPORT_API_KEY        the ceustamps-api Web App's CEU_ADMIN_KEY
+#   REPORT_AUTH_USER      sign-in name for this site
+#   REPORT_AUTH_PASSWORD  sign-in password for this site (long and random)
+#   REPORT_API_URL        optional; defaults to https://ceustamps-api.azurewebsites.net
+
+[build]
+  command = "npm run build:netlify"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    X-Robots-Tag = "noindex, nofollow"

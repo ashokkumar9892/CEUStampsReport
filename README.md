@@ -84,6 +84,26 @@ az sql server firewall-rule create -g TradeAlgoResource -s tradealgo-sql8892 `
   -n ReportApp --start-ip-address <app IP> --end-ip-address <app IP>
 ```
 
+## Hosting on Netlify
+
+[netlify.toml](netlify.toml) sets this up. It publishes only the page (`dist/`,
+built from `public/` and `shared/` by `npm run build:netlify`) and runs
+`/api/report` as the function [netlify/functions/report.mjs](netlify/functions/report.mjs).
+On Netlify the report always reads through the API; SQL mode isn't available,
+because Netlify's addresses aren't in the SQL firewall.
+
+In **Site configuration → Environment variables**, set:
+
+| Variable | Value |
+|---|---|
+| `REPORT_API_KEY` | The `ceustamps-api` Web App's `CEU_ADMIN_KEY` |
+| `REPORT_AUTH_USER` | A sign-in name for the report |
+| `REPORT_AUTH_PASSWORD` | A long, random password |
+
+Then redeploy. The site is on the public internet, so the function refuses to
+return any data until all three are set. Browsers ask for the name and password
+when the page first loads the report.
+
 ## Who can open it
 
 - **By default it listens on `127.0.0.1` only.** Other machines can't connect. Requests

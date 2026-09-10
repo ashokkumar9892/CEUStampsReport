@@ -34,7 +34,7 @@ export function loadConfig(env = process.env) {
   if (!SOURCES.includes(source)) problems.push(`REPORT_SOURCE must be "api" or "sql", not "${source}".`);
 
   if (source === 'api') {
-    if (!api.key) problems.push("REPORT_API_KEY is not set — use the API's CEU_ADMIN_KEY (put it in .env).");
+    if (!api.key) problems.push("REPORT_API_KEY is not set — use the API's CEU_ADMIN_KEY.");
     let parsed = null;
     try {
       parsed = new URL(api.url);

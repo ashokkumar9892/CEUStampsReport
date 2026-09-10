@@ -6,7 +6,7 @@ reach them, and when and where they came from.
 
 The full specification is [docs/report-requirements.md](docs/report-requirements.md);
 code comments cite its section numbers (§5.2 and so on). The API it reads by default
-is described in §9 of the same document in the CEU-Website repo.
+is described in §9.
 
 ## Where the data comes from
 
@@ -60,11 +60,11 @@ Set `REPORT_API_KEY` in `.env` to the `CEU_ADMIN_KEY` configured on the
 - `REPORT_API_URL` must be `https://` (plain `http://` is accepted only for
   `localhost`), and redirects are never followed, so the key can't be sent anywhere
   else.
-- **The endpoint has to be deployed first.** On 10 Sep 2026 production still ran
-  commit `1b02764`, which has no `/api/admin/report`. Deploy the current API
-  (`deploy/deploy-ceustamps.ps1` in CEU-Website) and set `CEU_ADMIN_KEY` on the
-  Web App. Until then the page says the endpoint is missing; with a wrong key it
-  says the key was refused.
+- **The endpoint is live** since 10 Sep 2026 (API commit `83061df`, with
+  `CEU_ADMIN_KEY` set). If the API is ever rolled back to code without it, the page
+  says the endpoint is missing; with a wrong key it says the key was refused.
+- **Real students appear only once `ceustamps.com` sends visits.** Until that site
+  is built with `VITE_API_BASE` (§9.1.1), the report shows only deployment-check rows.
 
 ### SQL mode
 

@@ -519,3 +519,136 @@ SELECT COUNT(DISTINCT UPPER(TRIM(license_number))) FROM (
 Reference snapshot, taken 10 Sep 2026 for the UTC window
 `2026-09-01T00:00Z` → `2026-09-11T00:00Z`: **8 people, 7 sittings, 4 sign-ins**.
 The numbers will grow; the queries above remain the check.
+
+---
+
+## 9. Alternative: read through the existing API instead of the database
+
+The report application does not have to touch the database at all. The live API
+already has an endpoint that returns the whole report, with every rule in §5
+applied server-side.
+
+| | Direct to database (§2–4) | Through the API (this section) |
+|---|---|---|
+| Credentials in the report app | SQL login + password | One admin key |
+| Firewall rule needed | Yes, for the app's address | No |
+| Rules in §5 | You re-implement them | Already applied — same numbers as this report by construction |
+| Available today | Yes | **No — needs a deploy and a key (§9.1)** |
+
+### 9.1 Status — live
+
+| Requirement | State on 10 Sep 2026 |
+|---|---|
+| Endpoint deployed | **Yes.** Production runs commit `83061df` (deployed 10 Sep 2026) |
+| `CEU_ADMIN_KEY` set on the `ceustamps-api` Web App | **Yes.** A 43-character random key. Verified: `200` with the key, `404` without it or with a wrong one |
+| `x-admin-key` allowed by CORS | **No.** Only matters for a browser caller — see §9.4 |
+
+The key's value is not in this document. Copy it straight to the clipboard on a
+machine signed in with `az login`:
+
+```powershell
+az webapp config appsettings list -g TradeAlgoResource -n ceustamps-api `
+  --query "[?name=='CEU_ADMIN_KEY'].value" -o tsv | Set-Clipboard
+```
+
+To change it, set a new value on the Web App and in the report application —
+the old one stops working as soon as the API restarts.
+
+### 9.1.1 Either route stays empty until the live site sends data
+
+**This applies to the database route too.** On 10 Sep 2026 the site at
+`ceustamps.com` was built **without `VITE_API_BASE`**: its bundle contains no API
+address at all, so it runs as the browser-only prototype. A real visitor's
+sign-in goes nowhere, and the only rows in `ceustampsdb` are deployment checks.
+
+Connecting it changes **only visit recording**. Sign-ins and visits are the one
+thing the site sends to the API; the course engine — timers, questions,
+grading, certificates — still runs entirely in the browser and is unaffected.
+
+In order, for real students to appear in either report:
+
+1. **Deploy the API** (`./deploy/deploy-ceustamps.ps1`). Production lacks
+   `/api/sign-ins`, so the site would have nowhere to send them. The deploy also
+   ships the address-without-port fix (§5.8).
+2. **Build the site with** `VITE_API_BASE=https://ceustamps-api.azurewebsites.net`
+   — set it in Netlify under *Site settings → Environment variables*, then
+   redeploy. It is read at build time, so changing it without a rebuild does nothing.
+3. Nothing to change for CORS: `CEU_ALLOWED_ORIGINS` already lists
+   `https://ceustamps.com` and `https://www.ceustamps.com`.
+4. Optional: set `CEU_GEOIP_URL=https://ipwho.is/{ip}` on the Web App to record
+   city and state — a privacy decision (§7.5).
+
+### 9.2 Endpoint
+
+```
+GET https://ceustamps-api.azurewebsites.net/api/admin/report?from={from}&to={to}[&demo=1]
+x-admin-key: {CEU_ADMIN_KEY}
+```
+
+| Parameter | Meaning |
+|---|---|
+| `from`, `to` | **ISO instants** (recommended) — an exact half-open window, built as in §5.1. Or `YYYY-MM-DD` — read as **UTC** days, `to` inclusive (the server adds a day). |
+| `demo=1` | Include demo sittings (§5.3). Omit to exclude them. |
+
+Example:
+
+```bash
+curl -H "x-admin-key: $CEU_ADMIN_KEY" \
+  "https://ceustamps-api.azurewebsites.net/api/admin/report?from=2026-09-01T07:00:00.000Z&to=2026-09-10T07:00:00.000Z"
+```
+
+| Status | Meaning |
+|---|---|
+| `200` | Report body (§9.3) |
+| `400` `bad_range` | A date is missing or invalid, or the end is not after the start |
+| `404` `not_found` + `"No such endpoint."` | Missing or wrong key — refused as 404 so the endpoint is not advertised |
+| `404` `not_found` with no message | The deployed code does not have the endpoint (today's state) |
+| `429` `rate_limited` | More than 120 requests a minute from one address |
+
+### 9.3 Response
+
+```jsonc
+{
+  "range": { "from": "…Z", "to": "…Z", "includeDemo": false },
+  "geoipConfigured": false,          // whether addresses are resolved to places at all
+  "totals": {
+    "students": 8,                   // People tile
+    "signIns": 4,
+    "signedInOnly": 1,
+    "sessions": 7,                   // Sittings tile
+    "completed": 0,
+    "certificates": 0,
+    "seatMinutes": 0,
+    "locationsResolved": 0
+  },
+  "students": [ /* one per person — Students tab */ ],
+  "courses":  [ /* one per course — Courses tab */ ],
+  "sessions": [ /* one per sitting — Sittings tab */ ],
+  "signIns":  [ /* one per visit — Sign-ins tab */ ]
+}
+```
+
+| Array | Fields |
+|---|---|
+| `students` | `licence`, `name`, `email`, `phone`, `state`, `signIns`, `sessions`, `completed`, `courses[]`, `firstSeen`, `lastSeen`, `addresses[]`, `locations[]`, `seatMinutes`, `averageScore` |
+| `courses` | `id`, `title`, `state`, `section`, `students`, `sessions`, `completed`, `passed`, `averageScore`, `seatMinutes`, `addresses[]`, `locations[]` |
+| `sessions` | `id`, `name`, `licence`, `email`, `phone`, `state`, `courseId`, `course`, `programId`, `section`, `startedAt`, `completedAt`, `seatMinutes`, `scorePercent`, `passed`, `certificate`, `ip`, `location`, `device`, `isDemo` |
+| `signIns` | `licence`, `name`, `email`, `phone`, `state`, `at`, `ip`, `location`, `device` |
+
+All times are ISO-8601 UTC. Addresses are returned **raw**, so the display rules in
+§5.7 and the port quirk in §5.8 still apply in the report app. Ordering as
+returned: `students` by last seen, newest first; `courses` by sittings, most
+first; `sessions` and `signIns` oldest first — sort client-side (§6.4).
+
+### 9.4 Call it from a server, not from a browser
+
+The admin key opens every student's name, licence, email, phone and address.
+Anything shipped to a browser can be read by whoever opens the page, so the key
+must stay on the report application's **server side**, which calls the API and
+passes the result to its own pages.
+
+A browser calling the API directly would also fail today: the API's CORS rules
+allow only the `content-type` and `authorization` request headers, so the
+browser's preflight check refuses `x-admin-key` before the request is sent. The
+report app's origin would also have to be added to `CEU_ALLOWED_ORIGINS`.
+Server-to-server calls are not subject to CORS and need neither change.

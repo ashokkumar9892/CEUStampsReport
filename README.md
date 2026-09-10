@@ -104,6 +104,12 @@ Then redeploy. The site is on the public internet, so the function refuses to
 return any data until all three are set. Browsers ask for the name and password
 when the page first loads the report.
 
+The easiest way is [scripts/copy-report-site-settings.ps1](scripts/copy-report-site-settings.ps1),
+run in your own PowerShell window after `az login`. It puts each value on the
+clipboard in turn (the admin key from Azure, then the username, then a freshly
+generated password), waits while you paste each one, and keeps the secrets out of
+clipboard history. After you redeploy, it checks that the site now asks for a password.
+
 ## Who can open it
 
 - **By default it listens on `127.0.0.1` only.** Other machines can't connect. Requests

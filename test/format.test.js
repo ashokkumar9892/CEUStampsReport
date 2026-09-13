@@ -1,9 +1,20 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  csvField, deviceSummary, emptyLocationLabel, formatSeat, ipDisplay, ipKind, joinLocation, localDayWindow,
-  locationDisplay, normalizeIp, toCsv,
+  csvField, deviceSummary, emptyLocationLabel, formatDuration, formatSeat, ipDisplay, ipKind, joinLocation,
+  localDayWindow, locationDisplay, normalizeIp, toCsv,
 } from '../shared/format.js';
+
+test('time on site reads as a short duration, and unrecorded stays unrecorded', () => {
+  assert.equal(formatDuration(null), null);
+  assert.equal(formatDuration(undefined), null);
+  assert.equal(formatDuration(0), '0s');
+  assert.equal(formatDuration(45), '45s');
+  assert.equal(formatDuration(60), '1m 0s');
+  assert.equal(formatDuration(725), '12m 5s');
+  assert.equal(formatDuration(3840), '1h 4m');
+  assert.equal(formatDuration(-3), '0s');
+});
 
 test('device summary names the browser and system', () => {
   const cases = {

@@ -54,6 +54,16 @@ test('checked details from sittings win over sign-ins', () => {
   assert.equal(pat.state, 'NC');
 });
 
+test('time on site is kept per visit and summed per person, and unrecorded stays null', () => {
+  assert.equal(report.signIns.find((v) => v.id === 'G1').activeSeconds, 420);
+  assert.equal(report.signIns.find((v) => v.id === 'G1').lastActiveAt, '2026-09-01T12:09:30.000Z');
+  assert.equal(report.signIns.find((v) => v.id === 'G2').activeSeconds, null);
+  assert.equal(student('TX-9').activeSeconds, 95, 'one timed visit and one untimed one');
+  assert.equal(student('NC-12345').activeSeconds, 420);
+  assert.equal(student('SC-777').activeSeconds, null, 'no visit recorded a time');
+  assert.equal(student('GA-55').activeSeconds, null, 'no visits at all');
+});
+
 test('sign-in-only people take the first sign-in that has each field', () => {
   const chris = student('TX-9');
   assert.equal(chris.name, 'Chris Doe');

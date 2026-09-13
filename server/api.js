@@ -17,6 +17,10 @@ const distinct = (values) => [...new Set(values.filter(Boolean))];
 const addresses = (values) => distinct(list(values).map(normalizeIp));
 const count = (v) => Number(v) || 0;
 
+// Time on site keeps null apart from zero: an API from before visits were timed
+// sends no field at all, and a visit that never reported back sends null.
+const duration = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Math.max(0, Math.floor(Number(v))));
+
 function isReport(body) {
   return Boolean(body) && typeof body.totals === 'object' &&
     ['students', 'courses', 'sessions', 'signIns'].every((key) => Array.isArray(body[key]));
@@ -57,6 +61,9 @@ export function fromApiReport(body) {
     email: clean(v.email),
     phone: clean(v.phone),
     state: clean(v.state),
+    // Seconds the site was on screen; null = not recorded (see duration() below).
+    activeSeconds: duration(v.activeSeconds),
+    lastActiveAt: v.lastActiveAt ?? null,
     ip: clean(v.ip),
     ipAddress: normalizeIp(v.ip),
     location: clean(v.location),
@@ -75,6 +82,7 @@ export function fromApiReport(body) {
     finished: count(p.completed),
     seatMinutes: count(p.seatMinutes),
     averageScore: p.averageScore ?? null,
+    activeSeconds: duration(p.activeSeconds),
     firstSeen: p.firstSeen ?? null,
     lastSeen: p.lastSeen ?? null,
     ipAddresses: addresses(p.addresses),

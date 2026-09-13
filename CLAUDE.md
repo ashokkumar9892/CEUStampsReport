@@ -60,10 +60,11 @@ npm start              # local server on 127.0.0.1:5180, reads .env
 - **The admin key must stay server-side.** The API's CORS rules don't allow `x-admin-key` from a browser anyway.
 - **Old rows store `ip:port`** (e.g. `98.122.179.148:61347`); `::1` means the visitor was on the API's own machine.
 
-## State as of 10 Sep 2026
+## State as of 13 Sep 2026
 
 - API deployed at commit `83061df`; `CEU_ADMIN_KEY` set and verified.
-- **The main site ceustamps.com is not connected to the API** — it was built without `VITE_API_BASE`, so real visitors' sign-ins are not recorded and the database holds only deployment test rows. Fixing that is in CEU-Website: set `VITE_API_BASE=https://ceustamps-api.azurewebsites.net` on the main site in Netlify and redeploy. It changes visit recording only; courses and grading run in the browser.
+- ceustamps.com sends **sign-ins only** (`.env.production` sets `VITE_API_BASE`). Enrollments, progress and certificates still run in the browser and never reach the database, so Sittings/Finished/Seat time show only the old deployment-check rows.
+- **Time on site** (how long each sign-in visit kept the site visible) is built in CEU-Website `c37a7e7` but **not live yet**. Order to ship: (1) `deploy/apply-migration.ps1 005_visit_time.sql` adds `sign_ins.active_seconds` / `last_active_at`; (2) `deploy/deploy-ceustamps.ps1`; (3) push CEU-Website `main` so Netlify rebuilds ceustamps.com. Deploying the API before step 1 would make every visit's minute ping fail and fill `audit_log` with server errors. Until then the report shows "not recorded".
 - City/state lookup (`CEU_GEOIP_URL`) is deliberately off.
 
 ## Working here

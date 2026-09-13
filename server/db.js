@@ -21,9 +21,11 @@ LEFT JOIN dbo.certificates        AS cert ON cert.session_id = s.id
 WHERE s.started_at >= @from AND s.started_at < @to
 ORDER BY s.started_at ASC;`;
 
+// active_seconds and last_active_at come from CEU-Website migration 005.
 const SIGN_INS_SQL = `
 SELECT id, at, license_number, state_code, first_name, last_name, email, phone,
-       created_ip, created_city, created_region, created_country, user_agent
+       created_ip, created_city, created_region, created_country, user_agent,
+       active_seconds, last_active_at
 FROM dbo.sign_ins
 WHERE at >= @from AND at < @to
 ORDER BY at ASC;`;

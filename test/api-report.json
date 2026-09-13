@@ -144,6 +144,7 @@
       ],
       "scores": [],
       "seatMinutes": 0,
+      "activeSeconds": 95,
       "averageScore": null
     },
     {
@@ -164,6 +165,7 @@
       "addresses": [],
       "scores": [],
       "seatMinutes": 0,
+      "activeSeconds": null,
       "averageScore": null
     },
     {
@@ -186,6 +188,7 @@
       ],
       "scores": [],
       "seatMinutes": 60,
+      "activeSeconds": null,
       "averageScore": null
     },
     {
@@ -210,6 +213,7 @@
         60
       ],
       "seatMinutes": 25,
+      "activeSeconds": null,
       "averageScore": 60
     },
     {
@@ -232,6 +236,7 @@
       ],
       "scores": [],
       "seatMinutes": 60,
+      "activeSeconds": null,
       "averageScore": null
     },
     {
@@ -260,6 +265,7 @@
         90
       ],
       "seatMinutes": 43,
+      "activeSeconds": 420,
       "averageScore": 90
     }
   ],
@@ -405,6 +411,8 @@
       "phone": null,
       "state": null,
       "at": "2026-09-01T12:00:00.000Z",
+      "activeSeconds": 420,
+      "lastActiveAt": "2026-09-01T12:09:30.000Z",
       "ip": "98.122.179.148",
       "location": "Concord, North Carolina, United States",
       "device": "Mozilla/5.0"
@@ -416,6 +424,8 @@
       "phone": null,
       "state": null,
       "at": "2026-09-02T10:00:00.000Z",
+      "activeSeconds": null,
+      "lastActiveAt": null,
       "ip": "198.51.100.9",
       "location": null,
       "device": "Mozilla/5.0"
@@ -427,6 +437,8 @@
       "phone": null,
       "state": "TX",
       "at": "2026-09-09T10:00:00.000Z",
+      "activeSeconds": 95,
+      "lastActiveAt": "2026-09-09T10:02:00.000Z",
       "ip": "198.51.100.9",
       "location": null,
       "device": "Mozilla/5.0"
@@ -438,6 +450,8 @@
       "phone": null,
       "state": null,
       "at": "2026-09-04T08:55:00.000Z",
+      "activeSeconds": null,
+      "lastActiveAt": null,
       "ip": "::1",
       "location": null,
       "device": "Mozilla/5.0"

@@ -2,7 +2,7 @@
 // CSV happen here, on the full result for the range.
 
 import {
-  addDays, deviceSummary, emptyLocationLabel, formatSeat, ipDisplay, localDay, localDayWindow, toCsv,
+  addDays, deviceSummary, emptyLocationLabel, formatDuration, formatSeat, ipDisplay, localDay, localDayWindow, toCsv,
 } from '/shared/format.js';
 import { defaultDirection, pageInfo, sortRows } from '/shared/table.js';
 
@@ -76,6 +76,12 @@ const contactColumns = (nameLabel, licence) => [
   text('phone', 'Phone', (r) => r.phone),
 ];
 
+// Time on site: seconds the visit had the site on screen. `unrecorded` is what a
+// missing value reads as — visits from before it was tracked, or pages that never reported back.
+const timeOnSite = (unrecorded) => count('time', 'Time on site', (r) => r.activeSeconds, {
+  cell: (r) => (r.activeSeconds == null ? (unrecorded ? { text: unrecorded, tone: 'muted' } : null) : formatDuration(r.activeSeconds)),
+});
+
 const oneIp = (r) => (r.ipAddress ? [r.ipAddress] : []);
 const onePlace = (r) => (r.location ? [r.location] : []);
 
@@ -90,6 +96,7 @@ const DETAILS = {
     time: (r) => r.at,
     columns: [
       date('at', 'When', (r) => r.at),
+      timeOnSite('not recorded'),
       ipColumn(oneIp),
       placeColumn(onePlace, oneIp),
       text('device', 'Device', (r) => r.device, { cell: (r) => (r.device ? { text: deviceSummary(r.device), title: r.device } : null) }),
@@ -126,15 +133,16 @@ const TABS = [
       expandable('sittings', 'Sittings', 'sittings'),
       count('finished', 'Finished', (r) => r.finished),
       seat((r) => r.seatMinutes),
+      timeOnSite(null),
       date('lastSeen', 'Last seen', (r) => r.lastSeen),
       ipColumn((r) => r.ipAddresses),
       placeColumn((r) => r.locations, (r) => r.ipAddresses),
     ],
     csv: {
       headers: ['Name', 'Licence', 'Email', 'Phone', 'State', 'Courses taken', 'Sign-ins', 'Sittings', 'Finished',
-        'Seat minutes', 'Average score', 'First seen', 'Last seen', 'Addresses', 'Locations'],
+        'Seat minutes', 'Time on site (seconds)', 'Average score', 'First seen', 'Last seen', 'Addresses', 'Locations'],
       row: (r) => [r.name, r.key, r.email, r.phone, r.state, joined(r.courses), r.signIns, r.sittings, r.finished,
-        r.seatMinutes, r.averageScore, r.firstSeen, r.lastSeen, joined(r.ipAddresses), joined(r.locations)],
+        r.seatMinutes, r.activeSeconds, r.averageScore, r.firstSeen, r.lastSeen, joined(r.ipAddresses), joined(r.locations)],
     },
   },
   {
@@ -191,13 +199,14 @@ const TABS = [
     sort: ['at', 'desc'],
     columns: [
       date('at', 'When', (r) => r.at),
+      timeOnSite('not recorded'),
       ...contactColumns('Name', (r) => r.license),
       ipColumn(oneIp),
       placeColumn(onePlace, oneIp),
     ],
     csv: {
-      headers: ['When', 'Name', 'Licence', 'Email', 'Phone', 'State', 'IP address', 'Location', 'Device'],
-      row: (r) => [r.at, r.name, r.license, r.email, r.phone, r.state, r.ip, r.location, r.device],
+      headers: ['When', 'Time on site (seconds)', 'Last active', 'Name', 'Licence', 'Email', 'Phone', 'State', 'IP address', 'Location', 'Device'],
+      row: (r) => [r.at, r.activeSeconds, r.lastActiveAt, r.name, r.license, r.email, r.phone, r.state, r.ip, r.location, r.device],
     },
   },
 ];

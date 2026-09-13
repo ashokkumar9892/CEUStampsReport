@@ -62,14 +62,15 @@ function signIn(overrides) {
   return {
     id: overrides.id, at: at('01T12:00:00'), license_number: 'X-1', state_code: null, first_name: null, last_name: null,
     email: null, phone: null, created_ip: null, created_city: null, created_region: null, created_country: null,
-    user_agent: 'Mozilla/5.0', ...overrides,
+    user_agent: 'Mozilla/5.0', active_seconds: null, last_active_at: null, ...overrides,
   };
 }
 
 export const signInRows = [
-  signIn({ id: 'G1', at: at('01T12:00:00'), license_number: 'nc-12345', first_name: 'Patricia', last_name: 'R', created_ip: '98.122.179.148', ...concord }),
+  // Time on site: G1 and G3 reported how long they stayed; G2 and G4 never did.
+  signIn({ id: 'G1', at: at('01T12:00:00'), license_number: 'nc-12345', first_name: 'Patricia', last_name: 'R', created_ip: '98.122.179.148', ...concord, active_seconds: 420, last_active_at: at('01T12:09:30') }),
   // TX-9 never enrolls: first visit gives no name, only an email; a later one gives a name.
   signIn({ id: 'G2', at: at('02T10:00:00'), license_number: 'TX-9', email: 'chris@example.com', created_ip: '198.51.100.9' }),
-  signIn({ id: 'G3', at: at('09T10:00:00'), license_number: ' tx-9', first_name: 'Chris', last_name: 'Doe', email: 'other@example.com', state_code: 'TX', created_ip: '198.51.100.9' }),
+  signIn({ id: 'G3', at: at('09T10:00:00'), license_number: ' tx-9', first_name: 'Chris', last_name: 'Doe', email: 'other@example.com', state_code: 'TX', created_ip: '198.51.100.9', active_seconds: 95, last_active_at: at('09T10:02:00') }),
   signIn({ id: 'G4', at: at('04T08:55:00'), license_number: 'SC-777', first_name: 'Jordan', last_name: 'Lee', created_ip: '::1' }),
 ];

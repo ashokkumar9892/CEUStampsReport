@@ -93,6 +93,18 @@ export function deviceSummary(userAgent) {
   return ua.length > 40 ? `${ua.slice(0, 40)}…` : ua;
 }
 
+/**
+ * Seconds as a short duration: "45s", "12m 5s", "1h 4m". Null stays null —
+ * a visit whose time was never recorded is not a visit of zero seconds.
+ */
+export function formatDuration(seconds) {
+  if (seconds == null || !Number.isFinite(Number(seconds))) return null;
+  const s = Math.max(0, Math.floor(Number(seconds)));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s`;
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+}
+
 /** Minutes as "Xh Ym". */
 export function formatSeat(minutes) {
   const m = Math.max(0, Math.round(minutes || 0));

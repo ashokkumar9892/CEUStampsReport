@@ -86,6 +86,9 @@ function toSignIn(r) {
     email: clean(r.email),
     phone: clean(r.phone),
     state: clean(r.state_code),
+    // Seconds the tab was visible during this visit (migration 005); null = not recorded.
+    activeSeconds: r.active_seconds ?? null,
+    lastActiveAt: iso(r.last_active_at),
     ip: clean(r.created_ip),
     ipAddress: normalizeIp(r.created_ip),
     location: joinLocation(r.created_city, r.created_region, r.created_country),
@@ -128,6 +131,10 @@ function buildStudents(sittings, signIns) {
       finished: g.sittings.filter((s) => s.completedAt).length,
       seatMinutes: sum(g.sittings.map((s) => s.seatMinutes)),
       averageScore: average(g.sittings.map((s) => s.score)),
+      // Summed over the visits that recorded a time; null when none did.
+      activeSeconds: g.signIns.some((v) => v.activeSeconds != null)
+        ? sum(g.signIns.map((v) => v.activeSeconds ?? 0))
+        : null,
       firstSeen: visits.at(-1)?.at ?? null,
       lastSeen: visits[0]?.at ?? null,
       // Most recent first, so "first address" in the grid is the latest one.

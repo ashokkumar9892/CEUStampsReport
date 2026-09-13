@@ -63,6 +63,36 @@ export function locationDisplay(location, ip) {
   return location || emptyLocationLabel([ip]);
 }
 
+/**
+ * A browser's user-agent string as "Chrome on Windows". Returns null when there is
+ * none; the page shows the full string on hover, and the CSV exports it untouched.
+ */
+export function deviceSummary(userAgent) {
+  const ua = userAgent == null ? '' : String(userAgent).trim();
+  if (!ua) return null;
+  // Order matters: Edge and Opera also say "Chrome", and Chrome also says "Safari".
+  const browser =
+    /\bEdgA?\//.test(ua) ? 'Edge'
+      : /\b(OPR|Opera)\//.test(ua) ? 'Opera'
+        : /\bSamsungBrowser\//.test(ua) ? 'Samsung Internet'
+          : /\b(Firefox|FxiOS)\//.test(ua) ? 'Firefox'
+            : /\b(Chrome|CriOS)\//.test(ua) ? 'Chrome'
+              : /\bVersion\/[\d.]+.*\bSafari\//.test(ua) ? 'Safari'
+                : null;
+  const os =
+    /\b(iPhone|iPod)\b/.test(ua) ? 'iPhone'
+      : /\biPad\b/.test(ua) ? 'iPad'
+        : /\bAndroid\b/.test(ua) ? 'Android'
+          : /\bWindows\b/.test(ua) ? 'Windows'
+            : /\bCrOS\b/.test(ua) ? 'ChromeOS'
+              : /\bMac OS X\b/.test(ua) ? 'Mac'
+                : /\bLinux\b/.test(ua) ? 'Linux'
+                  : null;
+  if (browser && os) return `${browser} on ${os}`;
+  if (browser || os) return browser ?? os;
+  return ua.length > 40 ? `${ua.slice(0, 40)}…` : ua;
+}
+
 /** Minutes as "Xh Ym". */
 export function formatSeat(minutes) {
   const m = Math.max(0, Math.round(minutes || 0));

@@ -2,7 +2,7 @@
 // CSV happen here, on the full result for the range.
 
 import {
-  addDays, emptyLocationLabel, formatSeat, ipDisplay, localDay, localDayWindow, toCsv,
+  addDays, deviceSummary, emptyLocationLabel, formatSeat, ipDisplay, localDay, localDayWindow, toCsv,
 } from '/shared/format.js';
 import { defaultDirection, pageInfo, sortRows } from '/shared/table.js';
 
@@ -79,20 +79,51 @@ const contactColumns = (nameLabel, licence) => [
 const oneIp = (r) => (r.ipAddress ? [r.ipAddress] : []);
 const onePlace = (r) => (r.location ? [r.location] : []);
 
+// A count on the Students tab that opens that person's rows underneath (kind: 'signIns' | 'sittings').
+const expandable = (key, label, kind) =>
+  count(key, label, (r) => r[kind], { cell: (r) => (r[kind] > 0 ? { text: String(r[kind]), expand: kind } : '0') });
+
+// What opens under a student: one row per visit or sitting, newest first.
+const DETAILS = {
+  signIns: {
+    noun: ['sign-in', 'sign-ins'],
+    time: (r) => r.at,
+    columns: [
+      date('at', 'When', (r) => r.at),
+      ipColumn(oneIp),
+      placeColumn(onePlace, oneIp),
+      text('device', 'Device', (r) => r.device, { cell: (r) => (r.device ? { text: deviceSummary(r.device), title: r.device } : null) }),
+    ],
+  },
+  sittings: {
+    noun: ['sitting', 'sittings'],
+    time: (r) => r.startedAt,
+    columns: [
+      date('started', 'Started', (r) => r.startedAt),
+      courseText('course', 'Course', (r) => r.course),
+      text('result', 'Result', (r) => r.result, { cell: resultCell }),
+      seat((r) => r.seatMinutes),
+      ipColumn(oneIp),
+      placeColumn(onePlace, oneIp),
+    ],
+  },
+};
+
 const TABS = [
   {
     id: 'students',
     label: 'Students',
     rows: (report) => report.students,
     sort: ['lastSeen', 'desc'],
+    expandable: true,
     columns: [
       ...contactColumns('Student', (r) => r.key),
       text('courses', 'Courses taken', (r) => r.courses[0] ?? '', {
         className: 'course',
         cell: (r) => (r.courses.length ? firstPlus(r.courses, 'more') : { text: 'signed in, never enrolled', tone: 'muted' }),
       }),
-      count('signIns', 'Sign-ins', (r) => r.signIns),
-      count('sittings', 'Sittings', (r) => r.sittings),
+      expandable('signIns', 'Sign-ins', 'signIns'),
+      expandable('sittings', 'Sittings', 'sittings'),
       count('finished', 'Finished', (r) => r.finished),
       seat((r) => r.seatMinutes),
       date('lastSeen', 'Last seen', (r) => r.lastSeen),
@@ -181,6 +212,8 @@ const state = {
   sortDir: TABS[0].sort[1],
   page: 1,
   pageSize: 10,
+  byPerson: { signIns: new Map(), sittings: new Map() }, // licence → that person's rows
+  open: new Map(), // student licence → which detail is open under them
 };
 let latestRequest = 0;
 
@@ -188,6 +221,22 @@ function sortedRows() {
   const rows = state.tab.rows(state.report);
   const column = state.tab.columns.find((c) => c.key === state.sortKey);
   return column ? sortRows(rows, column, state.sortDir) : rows;
+}
+
+function groupByPerson(rows) {
+  const groups = new Map();
+  for (const row of rows) {
+    if (!groups.has(row.personKey)) groups.set(row.personKey, []);
+    groups.get(row.personKey).push(row);
+  }
+  return groups;
+}
+
+// Stable ids for aria-controls; licence numbers can hold characters an id should not.
+const detailIds = new Map();
+function detailId(key) {
+  if (!detailIds.has(key)) detailIds.set(key, `detail-${detailIds.size + 1}`);
+  return detailIds.get(key);
 }
 
 // ---- Rendering ----
@@ -230,6 +279,20 @@ function renderCell(column, row) {
   const raw = column.cell ? column.cell(row) : column.value(row);
   const cell = raw == null || raw === '' ? { text: DASH, tone: 'muted' } : typeof raw === 'object' ? raw : { text: String(raw) };
   const classes = [column.type === 'number' && 'num', column.className].filter(Boolean).join(' ');
+  if (cell.expand) {
+    const open = state.open.get(row.key) === cell.expand;
+    const noun = DETAILS[cell.expand].noun[1];
+    return el('td', { className: classes || null }, el('button', {
+      type: 'button',
+      className: 'expander',
+      'aria-expanded': String(open),
+      'aria-controls': open ? detailId(row.key) : null,
+      'aria-label': `${open ? 'Hide' : 'Show'} ${cell.text} ${noun} for ${row.name}`,
+      'data-person': row.key,
+      'data-kind': cell.expand,
+      onclick: () => toggleDetail(row.key, cell.expand),
+    }, cell.text, el('span', { className: 'caret', 'aria-hidden': 'true', text: open ? '▾' : '▸' })));
+  }
   const main = el('span', {
     className: [cell.pill ? `pill ${cell.tone}` : cell.tone, column.className === 'course' && 'truncate']
       .filter(Boolean).join(' ') || null,
@@ -239,6 +302,24 @@ function renderCell(column, row) {
   return el('td', { className: classes || null }, main,
     cell.more ? el('span', { className: 'more', title: cell.title, text: cell.more }) : null,
     cell.tag ? el('span', { className: 'tag', text: cell.tag }) : null);
+}
+
+/** The rows under a student whose Sign-ins or Sittings count is open, or null. */
+function detailRow(student, span) {
+  const kind = state.open.get(student.key);
+  if (!kind) return null;
+  const spec = DETAILS[kind];
+  const rows = [...(state.byPerson[kind].get(student.key) ?? [])]
+    .sort((a, b) => String(spec.time(b) ?? '').localeCompare(String(spec.time(a) ?? '')));
+  const noun = spec.noun[rows.length === 1 ? 0 : 1];
+  return el('tr', { className: 'detail', id: detailId(student.key) },
+    el('td', { colspan: String(span) },
+      el('div', { className: 'detail-body' },
+        el('p', { className: 'detail-title', text: `${rows.length} ${noun} by ${student.name}, newest first` }),
+        el('table', { className: 'subtable' },
+          el('thead', {}, el('tr', {}, ...spec.columns.map((c) =>
+            el('th', { scope: 'col', className: c.type === 'number' ? 'num' : null, text: c.label })))),
+          el('tbody', {}, ...rows.map((r) => el('tr', {}, ...spec.columns.map((c) => renderCell(c, r)))))))));
 }
 
 function renderTable() {
@@ -262,8 +343,10 @@ function renderTable() {
 
   const body = $('grid').tBodies[0];
   if (rows.length) {
-    body.replaceChildren(...rows.slice(info.start, info.end)
-      .map((row) => el('tr', {}, ...columns.map((col) => renderCell(col, row)))));
+    body.replaceChildren(...rows.slice(info.start, info.end).flatMap((row) => [
+      el('tr', {}, ...columns.map((col) => renderCell(col, row))),
+      state.tab.expandable ? detailRow(row, columns.length) : null,
+    ].filter(Boolean)));
   } else {
     body.replaceChildren(el('tr', {}, el('td', { colspan: String(columns.length), className: 'empty', text: 'Nothing in this range.' })));
   }
@@ -307,6 +390,15 @@ function sortBy(column) {
   renderTable();
 }
 
+function toggleDetail(key, kind) {
+  if (state.open.get(key) === kind) state.open.delete(key);
+  else state.open.set(key, kind); // one detail per student: opening Sittings replaces Sign-ins
+  renderTable();
+  // The table was redrawn; put focus back on the button that was pressed.
+  const selector = `button.expander[data-person="${CSS.escape(key)}"][data-kind="${kind}"]`;
+  $('grid').querySelector(selector)?.focus();
+}
+
 function goToPage(which) {
   const { pageCount } = pageInfo(sortedRows().length, state.page, state.pageSize);
   state.page = { first: 1, prev: state.page - 1, next: state.page + 1, last: pageCount }[which];
@@ -341,6 +433,8 @@ async function runReport() {
     state.report = body;
     state.range = { fromDay, toDay };
     state.page = 1;
+    state.byPerson = { signIns: groupByPerson(body.signIns), sittings: groupByPerson(body.sittings) };
+    state.open = new Map();
     const label = `${dayOnly.format(new Date(window.from))} – ${dayOnly.format(addDays(new Date(window.to), -1))}`;
     const origin = body.source === 'api' ? 'the CEU Stamps API' : 'the database';
     setStatus(`${label}, days on ${timeZone} time (UTC ${window.from} → ${window.to}). Loaded from ${origin} ${when(body.generatedAt)}.`);

@@ -131,6 +131,29 @@ td.empty { text-align: center; color: var(--muted); padding: 24px; }
 .pill.bad { color: var(--bad); background: var(--bad-bg); }
 .pill.pending { color: var(--pending); background: var(--pending-bg); }
 
+/* A Sign-ins / Sittings count that opens the rows behind it. */
+.expander {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border-color: var(--line);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.expander[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.expander .caret { font-size: 0.75em; }
+
+tr.detail > td { padding: 0; background: var(--head); white-space: normal; }
+tbody tr.detail:hover > td { background: var(--head); }
+/* Stays in view while the wide table is scrolled sideways. */
+.detail-body { position: sticky; left: 0; width: max-content; max-width: 100%; padding: 10px 14px 14px 28px; }
+.detail-title { margin: 0 0 8px; color: var(--muted); font-size: 0.85rem; }
+.subtable { width: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; font-size: 0.92em; }
+.subtable th { background: var(--panel); color: var(--muted); font-weight: 500; }
+.subtable tbody tr:hover td { background: var(--head); }
+
 .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 12px; }
 .pager span { margin: 0 6px; color: var(--muted); }
 

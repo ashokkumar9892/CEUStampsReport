@@ -1,9 +1,26 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  csvField, emptyLocationLabel, formatSeat, ipDisplay, ipKind, joinLocation, localDayWindow, locationDisplay,
-  normalizeIp, toCsv,
+  csvField, deviceSummary, emptyLocationLabel, formatSeat, ipDisplay, ipKind, joinLocation, localDayWindow,
+  locationDisplay, normalizeIp, toCsv,
 } from '../shared/format.js';
+
+test('device summary names the browser and system', () => {
+  const cases = {
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36': 'Chrome on Windows',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0': 'Edge on Windows',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1': 'Safari on iPhone',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15': 'Safari on Mac',
+    'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36': 'Chrome on Android',
+    'Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0': 'Firefox on Linux',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/139.0 Mobile/15E148 Safari/604.1': 'Chrome on iPhone',
+    'node': 'node',
+  };
+  for (const [ua, expected] of Object.entries(cases)) assert.equal(deviceSummary(ua), expected, ua);
+  assert.equal(deviceSummary(null), null);
+  assert.equal(deviceSummary('  '), null);
+  assert.equal(deviceSummary('x'.repeat(60)), `${'x'.repeat(40)}…`);
+});
 
 test('strips a port from IPv4 and bracketed IPv6, never from plain IPv6 (§5.8)', () => {
   assert.equal(normalizeIp('98.122.179.148:61347'), '98.122.179.148');

@@ -96,38 +96,28 @@ In **Site configuration → Environment variables**, set:
 
 | Variable | Value |
 |---|---|
-| `REPORT_API_KEY` | The `ceustamps-api` Web App's `CEU_ADMIN_KEY` — always required |
-| `REPORT_ALLOWED_IPS` | The addresses allowed to open the report, comma-separated — e.g. your office's public address |
-| `REPORT_AUTH_USER`, `REPORT_AUTH_PASSWORD` | Optional — a sign-in for everyone else |
+| `REPORT_API_KEY` | The `ceustamps-api` Web App's `CEU_ADMIN_KEY` — required |
+| `REPORT_AUTH_USER`, `REPORT_AUTH_PASSWORD` | Optional — set both to make every visitor sign in |
 
-Then redeploy. The site is on the public internet, so the function refuses to
-return any data until the key is set **and** it has a way to tell who is asking —
-an address list, a password, or both:
+Then redeploy. The function refuses to return any data until the key is set.
 
-| Set | Listed addresses | Everyone else |
-|---|---|---|
-| `REPORT_ALLOWED_IPS` only | Open straight in, no sign-in | Refused, told the address the site saw |
-| Sign-in pair only | Asked to sign in | Asked to sign in |
-| Both | Open straight in | Asked to sign in |
+**The report is open to every address, with no sign-in** (the owner's decision,
+15 Sep 2026). Anyone with the link sees every student's name, licence, email,
+phone and IP address. The admin key itself stays in the function and never
+reaches a browser. To lock the report again, set the sign-in pair and redeploy.
+`REPORT_ALLOWED_IPS` is no longer read; it can be deleted from Netlify.
 
-The address checked is the one Netlify recorded for the connection
-(`context.ip`) — never `X-Forwarded-For` or any other header, which a visitor
-can set to anything. If your internet provider changes your address, the
-refusal names the new one: put it in `REPORT_ALLOWED_IPS` and redeploy.
-
-The easiest way is [scripts/copy-report-site-settings.ps1](scripts/copy-report-site-settings.ps1),
-run in your own PowerShell window after `az login`. It puts the admin key and
-this machine's public address on the clipboard in turn, waits while you paste
-each one, and keeps the key out of clipboard history. After you redeploy, it
-checks that the site now opens from this machine.
+The easiest way to set the key is [scripts/copy-report-site-settings.ps1](scripts/copy-report-site-settings.ps1),
+run in your own PowerShell window after `az login`. It puts the admin key on the
+clipboard, keeps it out of clipboard history, and after you redeploy checks that
+the site answers.
 
 ## Who can open it
 
-- **On Netlify**, see above: an address list, a password, or both.
+- **On Netlify**, see above: anyone, unless a sign-in pair is set.
 - **Run locally (`npm start`) it listens on `127.0.0.1` only.** Other machines can't
   connect. Requests that arrived through a proxy (`X-Forwarded-For`, `Forwarded`, …)
-  or with a foreign `Host` header (DNS rebinding) are refused. `REPORT_ALLOWED_IPS`
-  applies to the Netlify function only.
+  or with a foreign `Host` header (DNS rebinding) are refused.
 - **To host it elsewhere**, set `REPORT_HOST=0.0.0.0` (or the platform's address). The app will
   then refuse to start unless `REPORT_AUTH_USER` and `REPORT_AUTH_PASSWORD` are set,
   and browsers will ask for them. Serve it only over HTTPS, and where the host

@@ -5,12 +5,10 @@
 #
 # Set in Site configuration → Environment variables (never in this file):
 #   REPORT_API_KEY        the ceustamps-api Web App's CEU_ADMIN_KEY (required)
-#   REPORT_ALLOWED_IPS    addresses that open the report with no sign-in, comma-separated
-#   REPORT_AUTH_USER      optional sign-in name for everyone else
-#   REPORT_AUTH_PASSWORD  optional sign-in password for everyone else (long and random)
+#   REPORT_AUTH_USER      optional: with REPORT_AUTH_PASSWORD, every visitor must sign in
+#   REPORT_AUTH_PASSWORD  optional (long and random)
 #   REPORT_API_URL        optional; defaults to https://ceustamps-api.azurewebsites.net
-# At least one of REPORT_ALLOWED_IPS or the sign-in pair must be set, or the
-# function refuses to return any data.
+# Without the sign-in pair the report is open to every address.
 
 [build]
   command = "npm run build:netlify"

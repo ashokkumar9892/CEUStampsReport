@@ -33,8 +33,12 @@ Values never go in files or commits.
 | Variable | Value |
 |---|---|
 | `REPORT_API_KEY` | `CEU_ADMIN_KEY` on the Azure Web App `ceustamps-api` (resource group `TradeAlgoResource`). Required. |
-| `REPORT_ALLOWED_IPS` | Addresses that open the report with no sign-in, comma-separated. The owner's address was `98.122.179.148` on 10 Sep 2026; residential addresses change. |
-| `REPORT_AUTH_USER` / `REPORT_AUTH_PASSWORD` | Optional sign-in for everyone else. |
+| `REPORT_AUTH_USER` / `REPORT_AUTH_PASSWORD` | Optional. Set both and every visitor must sign in. |
+
+**The report is open to every address with no sign-in** — the owner removed the IP
+restriction on 15 Sep 2026, knowing it exposes every student's contact details to
+anyone with the link. Don't re-add a restriction unless asked. `REPORT_ALLOWED_IPS` is
+no longer read.
 
 Copy the key to the clipboard without displaying it (needs `az login`):
 
@@ -42,7 +46,7 @@ Copy the key to the clipboard without displaying it (needs `az login`):
 az webapp config appsettings list -g TradeAlgoResource -n ceustamps-api --query "[?name=='CEU_ADMIN_KEY'].value" -o tsv | Set-Clipboard
 ```
 
-`scripts/copy-report-site-settings.ps1` walks through both settings and checks the site afterwards.
+`scripts/copy-report-site-settings.ps1` copies the key and checks the site afterwards.
 
 ## Commands
 
@@ -54,7 +58,6 @@ npm start              # local server on 127.0.0.1:5180, reads .env
 
 ## Rules that have bitten before
 
-- **Access comes from `context.ip` only**, never `X-Forwarded-For` or any other header — a visitor can set headers to anything. The 403 names the address the site saw, which is how the owner finds a changed address.
 - **Dates are UTC instants built from the operator's local days** (§5.1). Sending bare dates made the most recent activity vanish west of Greenwich.
 - **A person is `UPPER(TRIM(license_number))`**, not a session and not an address.
 - **The admin key must stay server-side.** The API's CORS rules don't allow `x-admin-key` from a browser anyway.

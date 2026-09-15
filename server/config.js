@@ -1,21 +1,9 @@
 // Settings come from the environment (or .env, loaded by `npm start`).
 
-import { isIP } from 'node:net';
-
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', '::1', 'localhost']);
 // §2.1 — the live API's login can rewrite compliance records; the admin can do anything.
 const FORBIDDEN_LOGINS = new Set(['ceustamps_app', 'tradealgoadmin']);
 const SOURCES = ['api', 'sql'];
-
-/**
- * An address in the one form it is compared in: trimmed, lower-case, and an
- * IPv4 address written the IPv6 way (::ffff:1.2.3.4) as plain IPv4 — otherwise
- * the same visitor could match or miss depending on how the address arrived.
- */
-export function normaliseIp(value) {
-  const ip = String(value ?? '').trim().toLowerCase();
-  return ip.startsWith('::ffff:') && isIP(ip.slice(7)) === 4 ? ip.slice(7) : ip;
-}
 
 export function loadConfig(env = process.env) {
   const problems = [];
@@ -43,12 +31,6 @@ export function loadConfig(env = process.env) {
       ? { user: env.REPORT_AUTH_USER, password: env.REPORT_AUTH_PASSWORD }
       : null;
 
-  // Netlify only: addresses that open the report with no sign-in.
-  const allowedIps = String(env.REPORT_ALLOWED_IPS || '')
-    .split(',')
-    .map(normaliseIp)
-    .filter(Boolean);
-
   if (!SOURCES.includes(source)) problems.push(`REPORT_SOURCE must be "api" or "sql", not "${source}".`);
 
   if (source === 'api') {
@@ -72,16 +54,10 @@ export function loadConfig(env = process.env) {
     }
   }
 
-  // A mistyped entry would otherwise just never match, and the report would
-  // refuse its owner with no hint that the setting itself was wrong.
-  for (const ip of allowedIps) {
-    if (!isIP(ip)) problems.push(`REPORT_ALLOWED_IPS has "${ip}", which is not an IP address.`);
-  }
-
   if (!local && !auth) {
     problems.push(`REPORT_HOST is ${host}, which other machines can reach; set REPORT_AUTH_USER and REPORT_AUTH_PASSWORD.`);
   }
   if (!Number.isInteger(port) || port < 1 || port > 65535) problems.push(`REPORT_PORT ${port} is not a valid port.`);
 
-  return { host, port, local, source, api, sql, auth, allowedIps, problems };
+  return { host, port, local, source, api, sql, auth, problems };
 }

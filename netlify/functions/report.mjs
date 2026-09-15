@@ -14,9 +14,16 @@
 import { createApiSource } from '../../server/api.js';
 import { loadConfig } from '../../server/config.js';
 import { answerReport, basicAuthOk, SECURITY_HEADERS, UNAUTHORISED_HEADERS } from '../../server/endpoint.js';
+import { createLocator, withLocations } from '../../server/geo.js';
 
-// Netlify stops a synchronous function after 10 seconds; give up on the API before that.
-const API_TIMEOUT_MS = 9_000;
+// Netlify stops a synchronous function after 10 seconds. The API gets most of it;
+// city/state lookups use what is left, and whatever is unfinished by 8.5s stays unresolved.
+const API_TIMEOUT_MS = 6_500;
+const REPORT_BUDGET_MS = 8_500;
+
+// Module scope, so answers are remembered for as long as Netlify keeps this
+// function warm and a re-run does not ask the lookup service again.
+const locate = createLocator();
 
 function reply(status, body, headers = {}) {
   const text = typeof body === 'string';
@@ -44,7 +51,8 @@ export default async function report(request) {
 
   if (request.method !== 'GET') return reply(405, 'Method not allowed.', { Allow: 'GET' });
 
-  const source = createApiSource({ ...settings.api, timeoutMs: API_TIMEOUT_MS });
+  const api = createApiSource({ ...settings.api, timeoutMs: API_TIMEOUT_MS });
+  const source = settings.geoip ? withLocations(api, locate, { budgetMs: REPORT_BUDGET_MS }) : api;
   const { status, body } = await answerReport(new URL(request.url).searchParams, source);
   return reply(status, body);
 }

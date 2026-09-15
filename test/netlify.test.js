@@ -5,7 +5,7 @@ import report from '../netlify/functions/report.mjs';
 
 const apiBody = JSON.parse(readFileSync(new URL('./api-report.json', import.meta.url), 'utf8'));
 const RANGE = 'https://report.example/api/report?from=2026-09-01T07:00:00.000Z&to=2026-09-10T07:00:00.000Z';
-const KEYS = ['REPORT_API_KEY', 'REPORT_API_URL', 'REPORT_AUTH_USER', 'REPORT_AUTH_PASSWORD', 'REPORT_SOURCE', 'REPORT_ALLOWED_IPS'];
+const KEYS = ['REPORT_API_KEY', 'REPORT_API_URL', 'REPORT_AUTH_USER', 'REPORT_AUTH_PASSWORD', 'REPORT_SOURCE', 'REPORT_ALLOWED_IPS', 'REPORT_GEOIP'];
 
 let savedEnv;
 let savedFetch;
@@ -20,7 +20,8 @@ beforeEach(() => {
     return new Response(JSON.stringify(apiBody), { status: 200, headers: { 'content-type': 'application/json' } });
   };
   for (const k of KEYS) delete process.env[k];
-  Object.assign(process.env, { REPORT_API_KEY: 'admin-key', REPORT_API_URL: 'https://api.example' });
+  // Lookups off unless a test turns them on, so calls[] holds only the API request.
+  Object.assign(process.env, { REPORT_API_KEY: 'admin-key', REPORT_API_URL: 'https://api.example', REPORT_GEOIP: 'off' });
 });
 
 afterEach(() => {
@@ -96,4 +97,30 @@ test('setting a sign-in pair locks it again, for every address', async () => {
 test('only one half of the sign-in pair leaves it open rather than locking everyone out', async () => {
   process.env.REPORT_AUTH_USER = 'ops';
   assert.equal((await report(new Request(RANGE))).status, 200);
+});
+
+test('fills in city and state for addresses the API left unplaced', async () => {
+  process.env.REPORT_GEOIP = 'on';
+  globalThis.fetch = async (url, init) => {
+    const u = new URL(url);
+    calls.push({ url: u, init });
+    if (u.host === 'api.example') {
+      return new Response(JSON.stringify(apiBody), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    if (u.host === 'ipwho.is') {
+      const ip = decodeURIComponent(u.pathname.slice(1));
+      const body = ip === '198.51.100.9'
+        ? { success: true, city: 'Austin', region: 'Texas', country: 'United States' }
+        : { success: false };
+      return new Response(JSON.stringify(body), { status: 200 });
+    }
+    return new Response('{}', { status: 500 });
+  };
+
+  const body = await (await report(new Request(RANGE))).json();
+  assert.ok(body.signIns.filter((v) => v.personKey === 'TX-9').every((v) => v.location === 'Austin, Texas, United States'));
+  assert.equal(body.geoipConfigured, true);
+  const lookedUp = calls.filter((c) => c.url.host !== 'api.example').map((c) => decodeURIComponent(c.url.pathname));
+  assert.ok(lookedUp.every((p) => !/::1|10.0.0.5/.test(p)), 'private and loopback addresses are never sent');
+  assert.ok(!calls.some((c) => c.url.host !== 'api.example' && 'x-admin-key' in (c.init?.headers ?? {})), 'the admin key goes only to the API');
 });

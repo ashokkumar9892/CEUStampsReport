@@ -48,6 +48,8 @@ function placesCell(locations, ips) {
   return locations.length ? firstPlus(locations) : { text: emptyLocationLabel(ips), tone: 'muted' };
 }
 
+const LOOKED_UP = 'Approximate: looked up from the IP address when this report ran';
+
 function resultCell(r) {
   const tone = r.completedAt == null ? 'pending' : r.passed === false ? 'bad' : 'ok';
   return { text: r.result, tone, pill: true, tag: r.isDemo ? 'demo' : null };
@@ -65,7 +67,12 @@ const courseText = (key, label, value) =>
 const ipColumn = (ips) =>
   text('ip', 'IP address', (r) => (ips(r).length ? ipDisplay(ips(r)[0]) : ''), { cell: (r) => ipsCell(ips(r)) });
 const placeColumn = (locations, ips) =>
-  text('location', 'Location', (r) => locations(r)[0] ?? '', { cell: (r) => placesCell(locations(r), ips(r)) });
+  text('location', 'Location', (r) => locations(r)[0] ?? '', {
+    cell: (r) => {
+      const cell = placesCell(locations(r), ips(r));
+      return r.locationLookedUp ? { ...cell, title: LOOKED_UP } : cell;
+    },
+  });
 
 const contactColumns = (nameLabel, licence) => [
   text('name', nameLabel, (r) => (r.name === NO_NAME ? '' : r.name), {
@@ -251,7 +258,7 @@ function detailId(key) {
 // ---- Rendering ----
 
 function renderTiles() {
-  const { totals, includeDemo, demoHidden, geoipConfigured } = state.report;
+  const { totals, includeDemo, demoHidden, geoipConfigured, locationLookup } = state.report;
   const demoNote = includeDemo ? 'demo sittings included' : demoHidden ? `${demoHidden} demo hidden` : 'demo excluded';
   const tiles = [
     ['People', totals.people, `${totals.signedInOnly} signed in only`],
@@ -260,7 +267,8 @@ function renderTiles() {
     ['Finished', totals.finished, `${totals.certificates} with a certificate`],
     ['Seat time', formatSeat(totals.seatMinutes), 'credited'],
     // The API says whether it resolves addresses at all; zero means something different when it doesn't.
-    ['Locations', totals.locations, geoipConfigured === false ? 'address lookup is off' : 'sittings + sign-ins placed'],
+    ['Locations', totals.locations, geoipConfigured === false ? 'address lookup is off'
+      : locationLookup ? 'placed from IP addresses' : 'sittings + sign-ins placed'],
   ];
   $('tiles').replaceChildren(
     ...tiles.map(([label, value, sub]) =>

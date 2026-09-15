@@ -26,6 +26,10 @@ export function loadConfig(env = process.env) {
     password: env.REPORT_SQL_PASSWORD || '',
   };
 
+  // City/state lookup for addresses the API left unplaced (server/geo.js). On
+  // unless REPORT_GEOIP=off, since it sends visitors' public IP addresses to a third party.
+  const geoip = String(env.REPORT_GEOIP || 'on').toLowerCase() !== 'off';
+
   const auth =
     env.REPORT_AUTH_USER && env.REPORT_AUTH_PASSWORD
       ? { user: env.REPORT_AUTH_USER, password: env.REPORT_AUTH_PASSWORD }
@@ -59,5 +63,5 @@ export function loadConfig(env = process.env) {
   }
   if (!Number.isInteger(port) || port < 1 || port > 65535) problems.push(`REPORT_PORT ${port} is not a valid port.`);
 
-  return { host, port, local, source, api, sql, auth, problems };
+  return { host, port, local, source, api, sql, auth, geoip, problems };
 }

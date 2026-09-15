@@ -3,6 +3,7 @@ import { createApiSource } from './api.js';
 import { createApp } from './app.js';
 import { loadConfig } from './config.js';
 import { createSqlSource } from './db.js';
+import { createLocator, withLocations } from './geo.js';
 
 const config = loadConfig();
 if (config.problems.length) {
@@ -10,7 +11,8 @@ if (config.problems.length) {
   process.exit(1);
 }
 
-const source = config.source === 'api' ? createApiSource(config.api) : createSqlSource(config.sql);
+const base = config.source === 'api' ? createApiSource(config.api) : createSqlSource(config.sql);
+const source = config.geoip ? withLocations(base, createLocator(), { budgetMs: 20_000 }) : base;
 const server = http.createServer(createApp({ config, source }));
 
 server.listen(config.port, config.host, () => {

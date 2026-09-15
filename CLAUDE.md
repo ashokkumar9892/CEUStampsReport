@@ -68,7 +68,7 @@ npm start              # local server on 127.0.0.1:5180, reads .env
 - API deployed at commit `83061df`; `CEU_ADMIN_KEY` set and verified.
 - ceustamps.com sends **sign-ins only** (`.env.production` sets `VITE_API_BASE`). Enrollments, progress and certificates still run in the browser and never reach the database, so Sittings/Finished/Seat time show only the old deployment-check rows.
 - **Time on site** (how long each sign-in visit kept the site visible) is built in CEU-Website `c37a7e7` but **not live yet**. Order to ship: (1) `deploy/apply-migration.ps1 005_visit_time.sql` adds `sign_ins.active_seconds` / `last_active_at`; (2) `deploy/deploy-ceustamps.ps1`; (3) push CEU-Website `main` so Netlify rebuilds ceustamps.com. Deploying the API before step 1 would make every visit's minute ping fail and fill `audit_log` with server errors. Until then the report shows "not recorded".
-- City/state lookup (`CEU_GEOIP_URL`) is deliberately off.
+- City/state lookup on the API (`CEU_GEOIP_URL`) is off, so rows arrive without a location. **The report looks addresses up itself** when it runs (`server/geo.js`: ipwho.is, then db-ip.com free), for public addresses only — owner's request, 15 Sep 2026. `REPORT_GEOIP=off` in Netlify stops it. The lookup must finish inside the function's 10 s limit (API 6.5 s, whole report 8.5 s).
 
 ## Working here
 

@@ -98,6 +98,7 @@ In **Site configuration → Environment variables**, set:
 |---|---|
 | `REPORT_API_KEY` | The `ceustamps-api` Web App's `CEU_ADMIN_KEY` — required |
 | `REPORT_AUTH_USER`, `REPORT_AUTH_PASSWORD` | Optional — set both to make every visitor sign in |
+| `REPORT_GEOIP` | Optional — `off` stops city/state lookups (below) |
 
 Then redeploy. The function refuses to return any data until the key is set.
 
@@ -106,6 +107,17 @@ Then redeploy. The function refuses to return any data until the key is set.
 phone and IP address. The admin key itself stays in the function and never
 reaches a browser. To lock the report again, set the sign-in pair and redeploy.
 `REPORT_ALLOWED_IPS` is no longer read; it can be deleted from Netlify.
+
+**City and state are looked up when the report runs.** The CEU Stamps API has its
+own lookup switched off, so rows arrive with no location. For each public address
+without one, the function asks [ipwho.is](https://ipwho.is) (free, no key), then
+[db-ip.com](https://db-ip.com)'s free API if that fails, and shows the answer in
+place of "not resolved" — marked as approximate on hover, and exported in the CSV.
+Answers are remembered while Netlify keeps the function warm, so a re-run usually
+asks nothing. Loopback and private addresses are never sent, lookups stop in time
+to stay inside Netlify's 10-second limit, and anything unfinished stays "not
+resolved". This sends visitors' IP addresses to those services (§7.5); set
+`REPORT_GEOIP=off` to stop it.
 
 The easiest way to set the key is [scripts/copy-report-site-settings.ps1](scripts/copy-report-site-settings.ps1),
 run in your own PowerShell window after `az login`. It puts the admin key on the

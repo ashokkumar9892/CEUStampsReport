@@ -8,6 +8,7 @@
 #   REPORT_AUTH_USER      optional: with REPORT_AUTH_PASSWORD, every visitor must sign in
 #   REPORT_AUTH_PASSWORD  optional (long and random)
 #   REPORT_API_URL        optional; defaults to https://ceustamps-api.azurewebsites.net
+#   REPORT_GEOIP          optional; "off" stops city/state lookups (ipwho.is, db-ip.com)
 # Without the sign-in pair the report is open to every address.
 
 [build]

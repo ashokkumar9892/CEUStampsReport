@@ -90,6 +90,21 @@ const newestFirst = (rows, key) => [...rows].sort((a, b) => String(b[key] ?? '')
 const distinct = (values) => [...new Set(values.filter(Boolean))];
 
 /**
+ * Looks up every address given, a few at a time, and returns ip -> location for
+ * the ones that could be placed. Stops asking when the deadline is near.
+ */
+export async function lookUpAll(ips, locate, { deadline = Date.now() + 3000, concurrency = 6 } = {}) {
+  const found = new Map();
+  await eachLimited(ips, concurrency, async (ip) => {
+    const left = deadline - Date.now();
+    if (left < 200) return; // out of time: leave it unresolved rather than hold the report
+    const location = await locate(ip, { timeoutMs: left });
+    if (location) found.set(ip, location);
+  });
+  return found;
+}
+
+/**
  * Fills in looked-up locations on a built report (the shape server/report.js
  * and server/api.js produce), then brings every figure that counts locations
  * back into line: each person's and course's list, and the Locations tile.
@@ -99,14 +114,7 @@ const distinct = (values) => [...new Set(values.filter(Boolean))];
 export async function fillLocations(report, locate, { deadline = Date.now() + 3000, concurrency = 6 } = {}) {
   const rows = [...report.sittings, ...report.signIns];
   const wanted = distinct(rows.filter((r) => !r.location && ipKind(r.ipAddress) === 'public').map((r) => r.ipAddress));
-
-  const found = new Map();
-  await eachLimited(wanted, concurrency, async (ip) => {
-    const left = deadline - Date.now();
-    if (left < 200) return; // out of time: leave it unresolved rather than hold the report
-    const location = await locate(ip, { timeoutMs: left });
-    if (location) found.set(ip, location);
-  });
+  const found = await lookUpAll(wanted, locate, { deadline, concurrency });
 
   for (const row of rows) {
     if (!row.location && found.has(row.ipAddress)) {
@@ -143,13 +151,14 @@ export async function fillLocations(report, locate, { deadline = Date.now() + 30
 /**
  * Wraps a report source so its reports come back with locations filled in.
  * `budgetMs` is how long, from the start of the request, the whole thing may take.
+ * `fill` is the function that knows the report's shape (the RADS10 report has its own).
  */
-export function withLocations(source, locate, { budgetMs = 8500 } = {}) {
+export function withLocations(source, locate, { budgetMs = 8500, fill = fillLocations } = {}) {
   return {
     async report(args) {
       const started = Date.now();
       const report = await source.report(args);
-      return fillLocations(report, locate, { deadline: started + budgetMs });
+      return fill(report, locate, { deadline: started + budgetMs });
     },
     close: () => source.close?.(),
   };

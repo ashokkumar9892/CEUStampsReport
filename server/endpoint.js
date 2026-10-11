@@ -31,12 +31,20 @@ function parseInstant(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/** The products this report covers; `?site=` picks one, and CEU Stamps is the default. */
+export const SITES = ['ceu', 'rads10'];
+
 /**
- * @param params  the request's URLSearchParams: from, to (UTC instants), includeDemo=1
- * @param source  anything with report({ from, to, includeDemo })
+ * @param params  the request's URLSearchParams: from, to (UTC instants), includeDemo=1, site
+ * @param source  anything with report({ from, to, includeDemo }), or one of those per site: { ceu, rads10 }
  * @returns { status, body } — body is JSON-serialisable
  */
-export async function answerReport(params, source, log = console) {
+export async function answerReport(params, sources, log = console) {
+  const site = params.get('site') || 'ceu';
+  if (!SITES.includes(site)) return { status: 400, body: { error: `There is no report for "${site}".` } };
+  const source = typeof sources.report === 'function' ? (site === 'ceu' ? sources : null) : sources[site];
+  if (!source) return { status: 404, body: { error: `The ${site} report is not available from this server.` } };
+
   const from = parseInstant(params.get('from'));
   const to = parseInstant(params.get('to'));
   if (!from || !to) {

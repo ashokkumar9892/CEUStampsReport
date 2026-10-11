@@ -124,3 +124,17 @@ test('fills in city and state for addresses the API left unplaced', async () => 
   assert.ok(lookedUp.every((p) => !/::1|10.0.0.5/.test(p)), 'private and loopback addresses are never sent');
   assert.ok(!calls.some((c) => c.url.host !== 'api.example' && 'x-admin-key' in (c.init?.headers ?? {})), 'the admin key goes only to the API');
 });
+
+test('?site=rads10 reads the RADS10 usage endpoint with the same key', async () => {
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url: new URL(url), init });
+    return new Response(JSON.stringify({ range: {}, truncated: false, views: [], clicks: [] }), { status: 200 });
+  };
+  const res = await report(new Request(`${RANGE}&site=rads10`));
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.site, 'rads10');
+  assert.equal(body.totals.visitors, 0);
+  assert.equal(calls[0].url.pathname, '/api/rads10/admin/usage');
+  assert.equal(calls[0].init.headers['x-admin-key'], 'admin-key');
+});

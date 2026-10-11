@@ -37,7 +37,8 @@ const sendJson = (res, status, value) =>
 
 /**
  * @param source anything with report({ from, to, includeDemo }) — the live API
- *               (server/api.js) or the database (server/db.js).
+ *               (server/api.js) or the database (server/db.js) — or one per
+ *               tab of the page: { ceu, rads10 }.
  */
 export function createApp({ config, source, log = console }) {
   function refusal(req) {

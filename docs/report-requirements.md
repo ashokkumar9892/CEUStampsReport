@@ -652,3 +652,49 @@ allow only the `content-type` and `authorization` request headers, so the
 browser's preflight check refuses `x-admin-key` before the request is sent. The
 report app's origin would also have to be added to `CEU_ALLOWED_ORIGINS`.
 Server-to-server calls are not subject to CORS and need neither change.
+
+## 10. The RADS10 tab
+
+Added 11 Oct 2026. The page carries a second product beside CEU Stamps; a switch at
+the top chooses between them, and `/#rads10` opens this one directly. Everything in
+§6 (filters, tiles, tabs, sorting, paging, CSV) works the same way.
+
+### 10.1 Source
+
+`GET /api/report?site=rads10&from=…&to=…` on this site calls
+`GET /api/rads10/admin/usage?from=…&to=…` on the API with the same `x-admin-key` as
+§9. The API returns every page view in the range (newest first, at most 20,000, with
+`truncated` set when there were more) and the clicks through to shops counted per
+shop and station. The rules below are applied by this site, in `server/rads10.js`.
+
+### 10.2 Rules
+
+1. **Visitor** — a browser. rads10.com gives each one a random id and keeps it in the
+   browser. Two devices are two visitors; clearing the browser starts a new one.
+2. **Name** — if any page view of a visitor in the range was logged in to a station or
+   shop account, the visitor carries that account's name and type. Otherwise the name
+   is "Visitor" and the first eight characters of the id.
+3. **Admin** — a visitor with any page view logged in to the RADS10 admin dashboard is
+   the owner. Left out of every figure unless "Include admin visits" is ticked; the
+   Visits tile says how many were hidden.
+4. **Visit** — the page views of one browser session, in the order they were opened.
+   Landing page and referrer come from the first; the address from the first that has one.
+5. **Time on site** — the seconds each page was on screen, added up. A page that never
+   reported back is "not recorded", not zero (as §5 treats a sign-in).
+6. **Station** — the station whose page the visitor arrived through, from the site's
+   30-day station cookie.
+7. **Location** — looked up from the visit's address when the report runs (§5.6), for
+   public addresses only. The Places tile counts different places.
+8. **Shop clicks** — counted by the API without a visitor or an address, so they are a
+   tab of their own and are not affected by rule 3.
+
+### 10.3 Tabs
+
+| Tab | One row per | Opens on |
+|---|---|---|
+| Visitors | visitor; the Visits count opens that visitor's visits underneath | last seen, newest first |
+| Visits | visit | started, newest first |
+| Pages | page path | views, most first |
+| Shop clicks | shop and station code | clicks, most first |
+
+Tiles: Unique visitors, Visits, Page views, Time on site, Shop clicks, Places.

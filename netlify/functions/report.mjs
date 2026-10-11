@@ -15,6 +15,7 @@ import { createApiSource } from '../../server/api.js';
 import { loadConfig } from '../../server/config.js';
 import { answerReport, basicAuthOk, SECURITY_HEADERS, UNAUTHORISED_HEADERS } from '../../server/endpoint.js';
 import { createLocator, withLocations } from '../../server/geo.js';
+import { createRads10Source, fillVisitLocations } from '../../server/rads10.js';
 
 // Netlify stops a synchronous function after 10 seconds. The API gets most of it;
 // city/state lookups use what is left, and whatever is unfinished by 8.5s stays unresolved.
@@ -51,9 +52,16 @@ export default async function report(request) {
 
   if (request.method !== 'GET') return reply(405, 'Method not allowed.', { Allow: 'GET' });
 
-  const api = createApiSource({ ...settings.api, timeoutMs: API_TIMEOUT_MS });
-  const source = settings.geoip ? withLocations(api, locate, { budgetMs: REPORT_BUDGET_MS }) : api;
-  const { status, body } = await answerReport(new URL(request.url).searchParams, source);
+  // One source per tab of the page (?site=); both read the same API with the same key.
+  const ceu = createApiSource({ ...settings.api, timeoutMs: API_TIMEOUT_MS });
+  const rads10 = createRads10Source({ ...settings.api, timeoutMs: API_TIMEOUT_MS });
+  const sources = settings.geoip
+    ? {
+        ceu: withLocations(ceu, locate, { budgetMs: REPORT_BUDGET_MS }),
+        rads10: withLocations(rads10, locate, { budgetMs: REPORT_BUDGET_MS, fill: fillVisitLocations }),
+      }
+    : { ceu, rads10 };
+  const { status, body } = await answerReport(new URL(request.url).searchParams, sources);
   return reply(status, body);
 }
 

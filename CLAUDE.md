@@ -3,6 +3,10 @@
 Standalone, read-only report of who uses CEU Stamps: people, the courses they
 take, when, and from which address. It never writes anything.
 
+The same page has a second product, **RADS10** (switch at the top, or open
+`/#rads10`): how many different visitors rads10.com had, their visits, the pages
+they opened and the clicks through to shops. See "The RADS10 tab" below.
+
 - **Live:** https://ceustampsreport.netlify.app
 - **Deploys:** Netlify builds `main` of `github.com/ashokkumar9892/CEUStampsReport` on every push.
 - **Spec:** [docs/report-requirements.md](docs/report-requirements.md) — tables, rules, page layout. Section numbers (§5.1 etc.) in code comments refer to it.
@@ -24,6 +28,26 @@ The API it reads lives in the sibling repo **`c:\Ashok\Claude Ai Code\CEU-Websit
 | SQL it runs | `server/src/stores/sql.js` — `reportSessions`, `reportSignIns` |
 | Deploying the API | `deploy/deploy-ceustamps.ps1` (runs its tests first) |
 | The original in-app report | `src/components/ReportScreen.jsx` (localhost only) |
+
+## The RADS10 tab
+
+```
+browser page  →  /api/report?site=rads10  →  GET https://ceustamps-api.azurewebsites.net/api/rads10/admin/usage
+                                             header x-admin-key: <CEU_ADMIN_KEY>   (same key, no new setting)
+```
+
+| What | Where |
+|---|---|
+| Rules: visitor, visit, admin left out, places | `server/rads10.js` here (the API returns raw page views; nothing is aggregated there) |
+| The endpoint, and recording a page view | CEU-Website `server/src/rads10/usage.js` |
+| Its table | CEU-Website `server/sql/013_rads10_visits.sql` → `dbo.rads10_visits` |
+| The script that reports each page | RADS10 repo (`c:\Ashok\Claude Ai Code\RADS10`) `public/app.js` — `reportVisit()` |
+
+- **A visitor is a browser**, a random id rads10.com keeps in `localStorage`. Nobody signs in to browse, so there is no name unless that browser logged in to a station or shop account.
+- **A visit** is one browser session (`sessionStorage`); its time on site is the pages' on-screen seconds added up.
+- **The owner is left out**: any browser that has the RADS10 admin dashboard logged in is hidden unless "Include admin visits" is ticked.
+- **Shop clicks** come from `rads10_clicks`, which has never stored an address or a visitor, so they sit beside the visitors, not under them.
+- There is no RADS10 history before the day its site began reporting visits. Shop clicks go back further.
 
 ## Settings
 
@@ -69,6 +93,26 @@ npm start              # local server on 127.0.0.1:5180, reads .env
 - ceustamps.com sends **sign-ins only** (`.env.production` sets `VITE_API_BASE`). Enrollments, progress and certificates still run in the browser and never reach the database, so Sittings/Finished/Seat time show only the old deployment-check rows.
 - **Time on site** (how long each sign-in visit kept the site visible) is built in CEU-Website `c37a7e7` but **not live yet**. Order to ship: (1) `deploy/apply-migration.ps1 005_visit_time.sql` adds `sign_ins.active_seconds` / `last_active_at`; (2) `deploy/deploy-ceustamps.ps1`; (3) push CEU-Website `main` so Netlify rebuilds ceustamps.com. Deploying the API before step 1 would make every visit's minute ping fail and fill `audit_log` with server errors. Until then the report shows "not recorded".
 - City/state lookup on the API (`CEU_GEOIP_URL`) is off, so rows arrive without a location. **The report looks addresses up itself** when it runs (`server/geo.js`: ipwho.is, then db-ip.com free), for public addresses only — owner's request, 15 Sep 2026. `REPORT_GEOIP=off` in Netlify stops it. The lookup must finish inside the function's 10 s limit (API 6.5 s, whole report 8.5 s).
+
+## RADS10 tab: state as of 11 Oct 2026
+
+The tab is live on this site, but **the API and rads10.com are not deployed yet**, so it
+shows "does not record RADS10 visits yet". All three parts are committed and tested:
+this repo (pushed), CEU-Website branch `rads10-visits` (cut from `origin/main` `a1a7e7f`,
+not pushed), RADS10 `main` (not pushed). Order to ship, each a production change for the
+owner to approve:
+
+1. CEU-Website: merge `rads10-visits` into `main`, then
+   `deploy/apply-migration.ps1 013_rads10_visits.sql` (adds `rads10_visits`).
+2. CEU-Website: `deploy/deploy-ceustamps.ps1`. It refuses a dirty tree. On 11 Oct the
+   checkout at `c:\Ashok\Claude Ai Code\CEU-Website` was three commits behind `origin/main`
+   and held uncommitted WooCommerce work (`rads10/app.js`, both stores, `010_...sql`) that is
+   not part of this; deploy from a clean, current tree.
+3. RADS10: push `main` so Netlify publishes the page script and the Privacy Policy's new
+   "Visits" paragraph. The policy used to say "no analytics trackers"; the owner should
+   read the new wording before it goes out.
+
+Pushing step 3 before step 2 is harmless (the pages' reports get a 404 and are ignored).
 
 ## Working here
 

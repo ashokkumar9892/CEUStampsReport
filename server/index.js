@@ -4,6 +4,7 @@ import { createApp } from './app.js';
 import { loadConfig } from './config.js';
 import { createSqlSource } from './db.js';
 import { createLocator, withLocations } from './geo.js';
+import { createRads10Source, fillVisitLocations } from './rads10.js';
 
 const config = loadConfig();
 if (config.problems.length) {
@@ -12,8 +13,15 @@ if (config.problems.length) {
 }
 
 const base = config.source === 'api' ? createApiSource(config.api) : createSqlSource(config.sql);
-const source = config.geoip ? withLocations(base, createLocator(), { budgetMs: 20_000 }) : base;
-const server = http.createServer(createApp({ config, source }));
+const locate = createLocator();
+const source = config.geoip ? withLocations(base, locate, { budgetMs: 20_000 }) : base;
+// The RADS10 tab is read from the API only; with REPORT_SOURCE=sql it has no data.
+const rads10 = config.source === 'api' ? createRads10Source(config.api) : null;
+const sources = {
+  ceu: source,
+  rads10: rads10 && config.geoip ? withLocations(rads10, locate, { budgetMs: 20_000, fill: fillVisitLocations }) : rads10,
+};
+const server = http.createServer(createApp({ config, source: sources }));
 
 server.listen(config.port, config.host, () => {
   const host = config.host.includes(':') ? `[${config.host}]` : config.host;

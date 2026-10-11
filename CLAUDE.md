@@ -98,16 +98,16 @@ npm start              # local server on 127.0.0.1:5180, reads .env
 
 The tab is live on this site, but **the API and rads10.com are not deployed yet**, so it
 shows "does not record RADS10 visits yet". All three parts are committed and tested:
-this repo (pushed), CEU-Website branch `rads10-visits` (cut from `origin/main` `a1a7e7f`,
-not pushed), RADS10 `main` (not pushed). Order to ship, each a production change for the
-owner to approve:
+this repo (pushed), CEU-Website `main` (visits merged locally as `5f60bcc`, 107 tests
+pass, not pushed), RADS10 `main` (not pushed). Order to ship, each a production change
+for the owner to approve:
 
-1. CEU-Website: merge `rads10-visits` into `main`, then
-   `deploy/apply-migration.ps1 013_rads10_visits.sql` (adds `rads10_visits`).
-2. CEU-Website: `deploy/deploy-ceustamps.ps1`. It refuses a dirty tree. On 11 Oct the
-   checkout at `c:\Ashok\Claude Ai Code\CEU-Website` was three commits behind `origin/main`
-   and held uncommitted WooCommerce work (`rads10/app.js`, both stores, `010_...sql`) that is
-   not part of this; deploy from a clean, current tree.
+1. CEU-Website: push `main`, then `deploy/apply-migration.ps1 013_rads10_visits.sql`
+   (adds `rads10_visits`). WooCommerce's `010_rads10_woocommerce.sql` may also still need
+   applying; check before deploying.
+2. CEU-Website: `deploy/deploy-ceustamps.ps1`. GitHub's `main` at `2440001` holds a broken
+   merge (Shopify connect and WooCommerce fail); the repair is `aeed354`, local only until
+   pushed. Never deploy with `-SkipTests`.
 3. RADS10: push `main` so Netlify publishes the page script and the Privacy Policy's new
    "Visits" paragraph. The policy used to say "no analytics trackers"; the owner should
    read the new wording before it goes out.
